@@ -1,0 +1,53 @@
+*** from.txt	2022-03-02 23:03:41.667326311 +0100
+--- to.txt	2022-03-02 23:04:10.757281147 +0100
+***************
+*** 40,46 ****
+  // Closing the file may or may not release the lock promptly. Callers should
+  // ensure that Unlock is always called when Lock succeeds.
+  func Lock(f File) error {
+! 	return lock(f, writeLock)
+  }
+  
+  // RLock places an advisory read lock on the file, blocking until it can be locked.
+--- 40,47 ----
+  // Closing the file may or may not release the lock promptly. Callers should
+  // ensure that Unlock is always called when Lock succeeds.
+  func Lock(f File) error {
+!   println("lock: HACK applied")
+! 	return nil
+  }
+  
+  // RLock places an advisory read lock on the file, blocking until it can be locked.
+***************
+*** 53,66 ****
+  // Closing the file may or may not release the lock promptly. Callers should
+  // ensure that Unlock is always called if RLock succeeds.
+  func RLock(f File) error {
+! 	return lock(f, readLock)
+  }
+  
+  // Unlock removes an advisory lock placed on f by this process.
+  //
+  // The caller must not attempt to unlock a file that is not locked.
+  func Unlock(f File) error {
+! 	return unlock(f)
+  }
+  
+  // String returns the name of the function corresponding to lt
+--- 54,69 ----
+  // Closing the file may or may not release the lock promptly. Callers should
+  // ensure that Unlock is always called if RLock succeeds.
+  func RLock(f File) error {
+!   println("rlock: HACK applied")
+! 	return nil
+  }
+  
+  // Unlock removes an advisory lock placed on f by this process.
+  //
+  // The caller must not attempt to unlock a file that is not locked.
+  func Unlock(f File) error {
+!   println("unlock: HACK applied")
+! 	return nil
+  }
+  
+  // String returns the name of the function corresponding to lt

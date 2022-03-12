@@ -1,0 +1,263 @@
+42a43,76
+> 	const enoent = () => {
+> 		const err = new Error("not found");
+> 		err.code = "ENOENT";
+> 		return err;
+> 	};
+> 
+> 	// HACK: set global process and fs modules (as required by Go?), which limits multiple concurrent go processes
+> 	// (this will break if changing directories, working on same files, etc. from concurrent Go processes)
+> 
+> 	let hackCustomFdLast = -1
+> 	const hackCustomFdToPath = {}
+> 	getFilePath = function (pathOrFd) {
+> 		if (!(typeof pathOrFd === 'string' || pathOrFd instanceof String)) { // File Descriptors (ints) aren't mapped
+> 			if (pathOrFd in hackCustomFdToPath) { // Unless it's a hacked custom file descriptor, which is mapped back to a path
+> 				let ret = hackCustomFdToPath[pathOrFd];
+> 				console.log("HACK: getFilePath(directory:", pathOrFd, "->", ret, ")");
+> 				return ret
+> 			}
+> 			return pathOrFd
+> 		}
+> 		if (pathOrFd.length > 0 && pathOrFd[0] === '/') { // Passthrough absolute paths
+> 			// if (pathOrFd.length == 1) {
+> 			//     return global.fs.getCwd()
+> 			// }
+> 			return pathOrFd
+> 		}
+> 		// Relative path: use cwd hack
+> 		let cwd = global.fs.getCwd();
+> 		if (cwd && cwd.length > 0 && cwd[cwd.length - 1] != '/') {
+> 			cwd = cwd + '/'
+> 		}
+> 		return cwd + pathOrFd
+> 	};
+> 
+43a78,126
+> 		console.log("HACK: No FS implementation available, providing BrowserFS in-memory filesystem")
+> 
+> 		// BrowserFS crashes more (worse API, more hacks)...
+> 		// BrowserFS.install(window);
+> 		// BrowserFS.configure({
+> 		//     fs: "InMemory"
+> 		// }, function (e) {
+> 		//     if (e) {
+> 		//         // An error happened!
+> 		//         throw e;
+> 		//     }
+> 		//     // Otherwise, BrowserFS is ready-to-use!
+> 		//     // TODO: Technically, we need to wait for this to run?
+> 		// });
+> 		// global.fs = BrowserFS.BFSRequire('fs');
+> 		// global.Buffer = BrowserFS.BFSRequire('buffer').Buffer;
+> 		// global.GoHackCwd = '/';
+> 		// global.fs.getCwd = function () {
+> 		//     return global.GoHackCwd
+> 		// }
+> 		// global.fs.chdir = function (val) {
+> 		//     global.GoHackCwd = val
+> 		// }
+> 
+> 		// FIXME: VirtualFS is much slower reading large files (workaround: caching WASM modules)
+> 		global.fs = virtualfs.default;
+> 		global.Buffer = virtualfs.Buffer;
+> 		// Open stdin, stdout and stderr and do nothing with them to avoid file descriptor conflicts (0/1/2)
+> 		global.fs.open('/dev/null', 'r')
+> 		global.fs.open('/dev/null', 'r')
+> 		global.fs.open('/dev/null', 'r')
+> 
+> 		global.fs.constants = {
+> 			O_RDONLY: 0,
+> 			O_WRONLY: 1,
+> 			O_RDWR: 2,
+> 			O_CREAT: 64,
+> 			O_EXCL: 128,
+> 			O_NOCTTY: 256,
+> 			O_TRUNC: 512,
+> 			O_APPEND: 1024,
+> 			O_DIRECTORY: 65536,
+> 			O_NOATIME: 262144,
+> 			O_NOFOLLOW: 131072,
+> 			O_SYNC: 1052672,
+> 			O_DIRECT: 16384,
+> 			O_NONBLOCK: 2048,
+> 		};
+> 
+45,47c128,131
+< 		global.fs = {
+< 			constants: { O_WRONLY: -1, O_RDWR: -1, O_CREAT: -1, O_TRUNC: -1, O_APPEND: -1, O_EXCL: -1 }, // unused
+< 			writeSync(fd, buf) {
+---
+> 
+> 		global.fs.writeSyncOriginal = global.fs.writeSync
+> 		global.fs.writeSync = function (fd, buf) {
+> 			if (fd === 1 || fd === 2) {
+55,56c139,146
+< 			},
+< 			write(fd, buf, offset, length, position, callback) {
+---
+> 			} else {
+> 				return global.fs.writeSyncOriginal(...arguments);
+> 			}
+> 		}
+> 
+> 		global.fs.writeOriginal = global.fs.write
+> 		global.fs.write = function (fd, buf, offset, length, position, callback) {
+> 			if (fd === 1 || fd === 2) {
+61,86c151,235
+< 				const n = this.writeSync(fd, buf);
+< 				callback(null, n);
+< 			},
+< 			chmod(path, mode, callback) { callback(enosys()); },
+< 			chown(path, uid, gid, callback) { callback(enosys()); },
+< 			close(fd, callback) { callback(enosys()); },
+< 			fchmod(fd, mode, callback) { callback(enosys()); },
+< 			fchown(fd, uid, gid, callback) { callback(enosys()); },
+< 			fstat(fd, callback) { callback(enosys()); },
+< 			fsync(fd, callback) { callback(null); },
+< 			ftruncate(fd, length, callback) { callback(enosys()); },
+< 			lchown(path, uid, gid, callback) { callback(enosys()); },
+< 			link(path, link, callback) { callback(enosys()); },
+< 			lstat(path, callback) { callback(enosys()); },
+< 			mkdir(path, perm, callback) { callback(enosys()); },
+< 			open(path, flags, mode, callback) { callback(enosys()); },
+< 			read(fd, buffer, offset, length, position, callback) { callback(enosys()); },
+< 			readdir(path, callback) { callback(enosys()); },
+< 			readlink(path, callback) { callback(enosys()); },
+< 			rename(from, to, callback) { callback(enosys()); },
+< 			rmdir(path, callback) { callback(enosys()); },
+< 			stat(path, callback) { callback(enosys()); },
+< 			symlink(path, link, callback) { callback(enosys()); },
+< 			truncate(path, length, callback) { callback(enosys()); },
+< 			unlink(path, callback) { callback(enosys()); },
+< 			utimes(path, atime, mtime, callback) { callback(enosys()); },
+---
+> 				const n = global.fs.writeSync(fd, buf);
+> 				callback(null, n, buf);
+> 			} else {
+> 				// buf:
+> 				arguments[1] = global.Buffer.from(arguments[1]);
+> 				return global.fs.writeOriginal(...arguments);
+> 			}
+> 		};
+> 
+> 		global.fs.readdirOriginal = global.fs.readdir
+> 		global.fs.readdir = function (path, callback) {
+> 			global.fs.readdirOriginal(getFilePath(path), callback)
+> 		};
+> 
+> 		global.fs.openOriginal = global.fs.open
+> 		global.fs.open = function (path, flags, mode, callback) {
+> 			var myflags = 'r';
+> 			var O = global.fs.constants;
+> 
+> 			// Convert numeric flags to string flags
+> 			// FIXME: maybe wrong...
+> 			if (flags & O.O_WRONLY) { // 'w'
+> 				myflags = 'w';
+> 				if (flags & O.O_EXCL) {
+> 					myflags = 'wx';
+> 				}
+> 			} else if (flags & O.O_RDWR) { // 'r+' or 'w+'
+> 				if (flags & O.O_CREAT && flags & O.O_TRUNC) { // w+
+> 					if (flags & O.O_EXCL) {
+> 						myflags = 'wx+';
+> 					} else {
+> 						myflags = 'w+';
+> 					}
+> 				} else { // r+
+> 					myflags = 'r+';
+> 				}
+> 			} else if (flags & O.O_APPEND) { // 'a'
+> 				throw new Error("Not implemented");
+> 			}
+> 			// TODO: handle other cases
+> 
+> 			return global.fs.openOriginal(getFilePath(path), myflags, mode, (err, ret) => {
+> 				// if (err && 'errno' in err && err.errno === 21) {
+> 				//     // Go (and node, wtf?) expects this open call on directories to succeed, but BrowserFS does not implement this
+> 				//     // HACK: This is not the proper behaviour, but good enough for Go that does not access the result
+> 				//     hackCustomFdLast--
+> 				//     hackCustomFdToPath[hackCustomFdLast] = getFilePath(path)
+> 				//     console.log("HACK: open(directory:", hackCustomFdLast, "->", getFilePath(path), ")");
+> 				//     return callback(null, hackCustomFdLast);
+> 				// }
+> 				return callback(err, ret)
+> 			});
+> 		};
+> 
+> 		let statFix = function (pass, retStat, callback) {
+> 			// console.log(pass, retStat, callback)
+> 			if (!retStat) {
+> 				return callback(enoent())
+> 			}
+> 			delete retStat['fileData'];
+> 			retStat.atimeMs = retStat.atime.getTime();
+> 			retStat.mtimeMs = retStat.mtime.getTime();
+> 			retStat.ctimeMs = retStat.ctime.getTime();
+> 			retStat.birthtimeMs = retStat.birthtime.getTime();
+> 			retStat.blksize = 4096;
+> 			retStat.blocks = retStat.size / retStat.blksize;
+> 			return callback(pass, retStat);
+> 		};
+> 		global.fs.fstatOriginal = global.fs.fstat;
+> 		global.fs.fstat = function (path, callback) {
+> 			let filePath = getFilePath(path);
+> 			// HACK: Check if we changed the file descriptor to a path, and change call
+> 			if (!(typeof filePath === 'string' || filePath instanceof String)) {
+> 				return global.fs.fstatOriginal(filePath, (a1, a2) => statFix(a1, a2, callback));
+> 			} else {
+> 				return global.fs.statOriginal(filePath, (a1, a2) => statFix(a1, a2, callback));
+> 			}
+> 		};
+> 		global.fs.lstatOriginal = global.fs.lstat;
+> 		global.fs.lstat = function (path, callback) {
+> 			return global.fs.lstatOriginal(getFilePath(path), (a1, a2) => statFix(a1, a2, callback));
+> 		};
+> 		global.fs.statOriginal = global.fs.stat;
+> 		global.fs.stat = function (path, callback) {
+> 			return global.fs.statOriginal(getFilePath(path), (a1, a2) => statFix(a1, a2, callback));
+87a237,273
+> 
+> 		global.fs.closeOriginal = global.fs.close;
+> 		global.fs.close = function (fd, callback) {
+> 			return global.fs.closeOriginal(fd, function () {
+> 				if (typeof arguments[0] === 'undefined') arguments[0] = null;
+> 				return callback(...arguments);
+> 			});
+> 		}
+> 
+> 		// Debug all FS calls to console
+> 		var handler = {
+> 			get: function (target, property) {
+> 				if (property in target && target[property] instanceof Function) {
+> 					return function () {
+> 						console.debug(property, '>>', arguments);
+> 						let callback = undefined;
+> 						if (arguments[arguments.length - 1] instanceof Function) {
+> 							var origCB = arguments[arguments.length - 1];
+> 							var newCB = function () {
+> 								console.debug(property, '<<', arguments);
+> 								return Reflect.apply(origCB, arguments.callee, arguments);
+> 							}
+> 							arguments[arguments.length - 1] = newCB;
+> 							callback = newCB;
+> 						}
+> 						let res = Reflect.apply(target[property], target, arguments);
+> 						if (!callback) {
+> 							console.debug(property, '<<', res);
+> 						}
+> 						return res;
+> 					}
+> 				} else {
+> 					return target[property]
+> 				}
+> 			}
+> 		}
+> 		global.fs = new Proxy(global.fs, handler);
+100,101c286,287
+< 			cwd() { throw enosys(); },
+< 			chdir() { throw enosys(); },
+---
+> 			cwd() { return global.fs.getCwd() },
+> 			chdir(val) { global.fs.chdir(val) },

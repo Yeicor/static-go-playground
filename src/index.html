@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Go Compiler</title>
+
+    <!-- external dependencies (keep as minimal as possible) -->
+    <!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/BrowserFS/2.0.0/browserfs.min.js" type="text/javascript"></script>-->
+    <script src="https://cdn.jsdelivr.net/npm/virtualfs@2.2.0/dist/index.browser.umd.min.js"
+            type="text/javascript"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js" type="text/javascript"></script>
+    <script src="https://kit.fontawesome.com/2a77108ca8.js" crossorigin="anonymous"></script>
+    <!-- TODO: <script src="https://unpkg.com/dropzone@6.0.0-beta.1/dist/dropzone-min.js" type="text/javascript"></script>-->
+    <!-- TODO: <link href="https://unpkg.com/dropzone@6.0.0-beta.1/dist/dropzone.css" rel="stylesheet" type="text/css"/>-->
+
+    <!-- Main javascript & CSS -->
+    <link href="main.css" rel="stylesheet" type="text/css"/>
+    <script src="wasm_exec.js" type="text/javascript"></script>
+    <script src="main.js" type="text/javascript"></script>
+</head>
+<body>
+
+<!-- Settings toggle (always shown) -->
+<button class="tooltip" id="settings-toggle" style="position: absolute; top: 0; right: 0; margin: 0; padding: 0">
+    <div style="overflow: hidden"><i class="fa fa-gear tooltip tooltip-hover" style="font-size: 48px"></i></div>
+    <!-- Settings content -->
+    <span id="settings" class="tooltip-text tooltip-text-active">
+        Upload sources: <input id="input-sources-zip" type="file" accept=".zip"/>
+        <span class="tooltip tooltip-hover">
+            <i class="fa fa-question-circle " style="color:dodgerblue"></i>
+            <span class="tooltip-text" style="text-align: left; padding: 5px">
+                Expects a .zip with:<br/>
+                <code> - package main on /</code><br/>
+                <code> - go mod vendor</code>
+            </span>
+        </span>
+    </span>
+</button>
+
+</body>
+</html>
