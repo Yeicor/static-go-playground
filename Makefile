@@ -8,7 +8,11 @@ GOROOT=$(shell go env GOROOT)
 # The output directory (will be created, and its contents will be overwritten)
 DIST=dist
 
-all: fs wasm-opt fs-zip static # Prepares a static server at ${DIST}/
+all: fs wasm-opt fs-zip frontend-prod # Prepares a static server at ${DIST}/
+
+frontend-prod: # Build the frontend
+	myYarn="yarn" && if ! command -v $$myYarn; then export myYarn="npm"; fi && \
+	cd frontend && $$myYarn install && $$myYarn run build && rm dist/*.map && mv dist/* ../dist && rmdir dist
 
 static: wasm-exec-patch # Prepare and copy other static files for the website
 	cd src && cp -r "." "../${DIST}"
@@ -58,10 +62,6 @@ cmd-buildhelper: bootstrap-go-pkg-prepare # Custom reimplementation of the go bu
 	export OUT_DIR="${DIST}/fs/usr/lib/go/bin" && \
 	mkdir -p "$$OUT_DIR" && \
 	cd "$$BUILD_DIR" && GOOS=js GOARCH=wasm go build -o "$(CURDIR)/$$OUT_DIR/buildhelper" -v .
-#	# WARNING: Needs to be compiled by the same go compiler as used in runtime (see issue: https://github.com/KyleBanks/depth/issues/15)
-#	# 	Solution: delay compile to runtime on browser by just copying sources!
-#	mkdir -p "${DIST}/fs/tmp/"
-#	cp -r "src/buildhelper" "${DIST}/fs/tmp/buildhelper-src"
 
 cmd-compile: bootstrap-go-pkg-prepare # Builds compile command (for lower level go build)
 	export GOROOT="$(CURDIR)/${DIST}/tmp-bootstrap/go" && \

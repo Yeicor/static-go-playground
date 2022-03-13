@@ -14,7 +14,7 @@ TODO: instructions
 - Full filesystem abstraction (TODO: optionally persistent) for both the compiler and running programs.
 - Full DOM access for running programs.
 - [ ] Code editor.
-- [ ] Download example project on startup.
+- [ ] Download any example/demo project on startup.
 
 ## Go Compiler on browser
 
@@ -34,8 +34,13 @@ TODO
 
 ## Building from source
 
-Just run `make` with a Go Compiler installed and access to very common unix tools. It will output a static site
-to `dist/` that can be uploaded to any web server.
+Dependencies:
+
+- Go Compiler (TODO: minimum version)
+- `node` and `npm`/`yarn`
+- Very common UNIX tools.
+
+Just run `make`: it will output a static site to `dist/` that can be uploaded to any web server.
 
 Alternatively, you can just download the latest [TODO: artifact.zip].
 

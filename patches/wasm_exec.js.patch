@@ -1,4 +1,4 @@
-42a43,76
+42a43,69
 > 	const enoent = () => {
 > 		const err = new Error("not found");
 > 		err.code = "ENOENT";
@@ -8,15 +8,8 @@
 > 	// HACK: set global process and fs modules (as required by Go?), which limits multiple concurrent go processes
 > 	// (this will break if changing directories, working on same files, etc. from concurrent Go processes)
 > 
-> 	let hackCustomFdLast = -1
-> 	const hackCustomFdToPath = {}
 > 	getFilePath = function (pathOrFd) {
 > 		if (!(typeof pathOrFd === 'string' || pathOrFd instanceof String)) { // File Descriptors (ints) aren't mapped
-> 			if (pathOrFd in hackCustomFdToPath) { // Unless it's a hacked custom file descriptor, which is mapped back to a path
-> 				let ret = hackCustomFdToPath[pathOrFd];
-> 				console.log("HACK: getFilePath(directory:", pathOrFd, "->", ret, ")");
-> 				return ret
-> 			}
 > 			return pathOrFd
 > 		}
 > 		if (pathOrFd.length > 0 && pathOrFd[0] === '/') { // Passthrough absolute paths
@@ -33,7 +26,7 @@
 > 		return cwd + pathOrFd
 > 	};
 > 
-43a78,126
+43a71,119
 > 		console.log("HACK: No FS implementation available, providing BrowserFS in-memory filesystem")
 > 
 > 		// BrowserFS crashes more (worse API, more hacks)...
@@ -83,7 +76,7 @@
 > 			O_NONBLOCK: 2048,
 > 		};
 > 
-45,47c128,131
+45,47c121,124
 < 		global.fs = {
 < 			constants: { O_WRONLY: -1, O_RDWR: -1, O_CREAT: -1, O_TRUNC: -1, O_APPEND: -1, O_EXCL: -1 }, // unused
 < 			writeSync(fd, buf) {
@@ -92,7 +85,7 @@
 > 		global.fs.writeSyncOriginal = global.fs.writeSync
 > 		global.fs.writeSync = function (fd, buf) {
 > 			if (fd === 1 || fd === 2) {
-55,56c139,146
+55,56c132,139
 < 			},
 < 			write(fd, buf, offset, length, position, callback) {
 ---
@@ -104,7 +97,7 @@
 > 		global.fs.writeOriginal = global.fs.write
 > 		global.fs.write = function (fd, buf, offset, length, position, callback) {
 > 			if (fd === 1 || fd === 2) {
-61,86c151,235
+61,86c144,150
 < 				const n = this.writeSync(fd, buf);
 < 				callback(null, n);
 < 			},
@@ -139,7 +132,7 @@
 > 				arguments[1] = global.Buffer.from(arguments[1]);
 > 				return global.fs.writeOriginal(...arguments);
 > 			}
-> 		};
+87a152,256
 > 
 > 		global.fs.readdirOriginal = global.fs.readdir
 > 		global.fs.readdir = function (path, callback) {
@@ -173,17 +166,7 @@
 > 			}
 > 			// TODO: handle other cases
 > 
-> 			return global.fs.openOriginal(getFilePath(path), myflags, mode, (err, ret) => {
-> 				// if (err && 'errno' in err && err.errno === 21) {
-> 				//     // Go (and node, wtf?) expects this open call on directories to succeed, but BrowserFS does not implement this
-> 				//     // HACK: This is not the proper behaviour, but good enough for Go that does not access the result
-> 				//     hackCustomFdLast--
-> 				//     hackCustomFdToPath[hackCustomFdLast] = getFilePath(path)
-> 				//     console.log("HACK: open(directory:", hackCustomFdLast, "->", getFilePath(path), ")");
-> 				//     return callback(null, hackCustomFdLast);
-> 				// }
-> 				return callback(err, ret)
-> 			});
+> 			return global.fs.openOriginal(getFilePath(path), myflags, mode, callback);
 > 		};
 > 
 > 		let statFix = function (pass, retStat, callback) {
@@ -217,7 +200,7 @@
 > 		global.fs.statOriginal = global.fs.stat;
 > 		global.fs.stat = function (path, callback) {
 > 			return global.fs.statOriginal(getFilePath(path), (a1, a2) => statFix(a1, a2, callback));
-87a237,273
+> 		};
 > 
 > 		global.fs.closeOriginal = global.fs.close;
 > 		global.fs.close = function (fd, callback) {
@@ -255,7 +238,7 @@
 > 			}
 > 		}
 > 		global.fs = new Proxy(global.fs, handler);
-100,101c286,287
+100,101c269,270
 < 			cwd() { throw enosys(); },
 < 			chdir() { throw enosys(); },
 ---
