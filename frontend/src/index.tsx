@@ -1,6 +1,6 @@
 import * as React from "react"
 import {render} from "react-dom"
-import {Settings} from "./settings/core";
+import {Settings} from "./settings/core"
 
 const App = () => {
     return (<>

@@ -1,4 +1,5 @@
 /node_modules
 /dist
-/.cache
+/.parcel-cache
 /yarn-error.log
+/src/go/wasm_exec.js.generated

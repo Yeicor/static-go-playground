@@ -1,6 +1,6 @@
-import {openVirtualFSMemory} from "./memfs";
+import {openVirtualFSMemory} from "./memfs"
 
-const virtualFSRuntimeInfo = {};
+const virtualFSRuntimeInfo = {}
 
 /**
  * Creates a virtual filesystem instance. Different IDs will create different filesystems.
@@ -12,7 +12,7 @@ export const openVirtualFS = (backend: "memory" | "localStorage", id: string): a
             if (id in virtualFSRuntimeInfo) {
                 return virtualFSRuntimeInfo[id]
             }
-            let fs = openVirtualFSMemory();
+            let fs = openVirtualFSMemory()
             virtualFSRuntimeInfo[id] = fs
             return fs
         default:

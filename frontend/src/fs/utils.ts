@@ -1,5 +1,5 @@
-import {Stats} from "fs";
-import JSZip from "jszip";
+import {Stats} from "fs"
+import JSZip from "jszip"
 
 /**
  * Boilerplate for converting fs callbacks to Promise calls
@@ -12,7 +12,7 @@ export const fsAsync = async (fs, method: string, fsUrl: string, extra?) => {
             } else {
                 resolve(data)
             }
-        };
+        }
         if (extra) {
             // noinspection JSUnresolvedFunction
             fs[method](fsUrl, extra, cb)
@@ -20,7 +20,7 @@ export const fsAsync = async (fs, method: string, fsUrl: string, extra?) => {
             // noinspection JSUnresolvedFunction
             fs[method](fsUrl, cb)
         }
-    }));
+    }))
 }
 
 /**
@@ -124,18 +124,22 @@ export const importZip = async (fs, zipBytes: Uint8Array, extractAt: string, pro
     const initialLoadProgress = 0.2
     await progress(0)
     const zip = await JSZip.loadAsync(zipBytes)
-    let numFilesProcessed = 0;
-    let numFiles = Object.keys(zip.files).length;
+    let numFilesProcessed = 0
+    let numFiles = Object.keys(zip.files).length
     await progress(initialLoadProgress)
     let allPromises = []
     zip.forEach((relativePath, file) => {
         let decompressionPromise = (async () => {
-            let fileNewPath = extractAt + relativePath;
+            let fileNewPath = extractAt + relativePath
             if (file.dir) {
                 // noinspection JSUnresolvedFunction
-                await fsAsync(fs, "mkdir", fileNewPath)
+                try {
+                    await fsAsync(fs, "mkdir", fileNewPath)
+                } catch (e) {
+                    console.log("importZip: ignoring error on mkdir:", e)
+                }
             } else {
-                let decompressedBytes = await file.async("uint8array");
+                let decompressedBytes = await file.async("uint8array")
                 await writeCache(fs, fileNewPath, decompressedBytes)
             }
             numFilesProcessed++
@@ -152,7 +156,7 @@ export const importZip = async (fs, zipBytes: Uint8Array, extractAt: string, pro
  */
 export const exportZip = async (fs, paths: [string], progress: (p: number) => Promise<any>): Promise<Uint8Array> => {
     const finalLoadProgress = 0.2
-    const zip = new JSZip();
+    const zip = new JSZip()
     let numFiles = 0 // First count files (should be very fast) to report progress
     for (let path of paths) {
         await findRecursive(fs, path, async (path1, stat, enter) => {
@@ -165,10 +169,10 @@ export const exportZip = async (fs, paths: [string], progress: (p: number) => Pr
     let numFilesProcessed = 0
     for (let path of paths) {
         await readRecursive(fs, path, async (childPath, isDir, bs) => {
-            let childSubPath: string;
+            let childSubPath: string
             if (paths.length === 1) {
                 // Write each directory and file of the given path to the zip, relative to the root path.
-                childSubPath = childPath.slice(path.length + 1);
+                childSubPath = childPath.slice(path.length + 1)
             } else {
                 childSubPath = childPath
             }
@@ -179,7 +183,7 @@ export const exportZip = async (fs, paths: [string], progress: (p: number) => Pr
         })
     }
     await progress(1 - finalLoadProgress)
-    let res = await zip.generateAsync({type: "uint8array"});
+    let res = await zip.generateAsync({type: "uint8array"})
     await progress(1)
     return res
 }

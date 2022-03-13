@@ -8,18 +8,17 @@ GOROOT=$(shell go env GOROOT)
 # The output directory (will be created, and its contents will be overwritten)
 DIST=dist
 
-all: fs wasm-opt fs-zip frontend-prod # Prepares a static server at ${DIST}/
+all: fs wasm-opt static fs-zip frontend-prod # Prepares a static server at ${DIST}/
 
 frontend-prod: # Build the frontend
 	myYarn="yarn" && if ! command -v $$myYarn; then export myYarn="npm"; fi && \
 	cd frontend && $$myYarn install && $$myYarn run build && rm dist/*.map && mv dist/* ../dist && rmdir dist
 
-static: wasm-exec-patch # Prepare and copy other static files for the website
-	cd src && cp -r "." "../${DIST}"
-	find "${DIST}" -name "*.patch" -delete # Clean up
+static: wasm-exec # Prepare and copy other static files for the website (not handled by frontend builder)
 
-wasm-exec-patch: # Apply wasm_exec.js patch to support a virtual filesystem (should work with most Go versions)
-	patch "${GOROOT}/misc/wasm/wasm_exec.js" "src/wasm_exec.js.patch" -o "${DIST}/wasm_exec.js"
+wasm-exec: # Copy the original wasm_exec.js (with minimal fixes for bundling) from the compiled distribution
+	sed -E 's/require\(/global.require\(/g; s/([^.])process/\1global.process/g; s/([^.])fs([\w.])/\1global.fs\2/g; s/const global.fs/const fs/g; s/global/globalRefHack/g; s/globalRefHack *=/ignoreMeHack =/g' \
+		"${GOROOT}/misc/wasm/wasm_exec.js" >"frontend/src/go/wasm_exec.js.generated"
 
 fs: bootstrap-go-pkg cmd-link # Finalizes the filesystem setup
 	mkdir -p "${DIST}/fs/src"  # Sources (and any uploaded files) will be stored here
@@ -54,28 +53,28 @@ cmd-go: bootstrap-go-pkg-prepare # Builds go command (for high level compilation
 	export BUILD_DIR="$$GOROOT/src/cmd/go/" && \
 	export OUT_DIR="${DIST}/fs/usr/lib/go/bin" && \
 	mkdir -p "$$OUT_DIR" && \
-	cd "$$BUILD_DIR" && GOOS=js GOARCH=wasm go build -o "$(CURDIR)/$$OUT_DIR/go" -v .
+	cd "$$BUILD_DIR" && GOOS=js GOARCH=wasm go build -trimpath -o "$(CURDIR)/$$OUT_DIR/go" -v .
 
 cmd-buildhelper: bootstrap-go-pkg-prepare # Custom reimplementation of the go build command using only low-level commands
 	export GOROOT="$(CURDIR)/${DIST}/tmp-bootstrap/go" && \
 	export BUILD_DIR="buildhelper" && \
 	export OUT_DIR="${DIST}/fs/usr/lib/go/bin" && \
 	mkdir -p "$$OUT_DIR" && \
-	cd "$$BUILD_DIR" && GOOS=js GOARCH=wasm go build -o "$(CURDIR)/$$OUT_DIR/buildhelper" -v .
+	cd "$$BUILD_DIR" && GOOS=js GOARCH=wasm go build -trimpath -o "$(CURDIR)/$$OUT_DIR/buildhelper" -v .
 
 cmd-compile: bootstrap-go-pkg-prepare # Builds compile command (for lower level go build)
 	export GOROOT="$(CURDIR)/${DIST}/tmp-bootstrap/go" && \
 	export BUILD_DIR="$$GOROOT/src/cmd/compile/" && \
 	export OUT_DIR="${DIST}/fs/usr/lib/go/pkg/tool/js_wasm" && \
 	mkdir -p "$$OUT_DIR" && \
-	cd "$$BUILD_DIR" && GOOS=js GOARCH=wasm go build -o "$(CURDIR)/$$OUT_DIR/compile" -v .
+	cd "$$BUILD_DIR" && GOOS=js GOARCH=wasm go build -trimpath -o "$(CURDIR)/$$OUT_DIR/compile" -v .
 
 cmd-link: bootstrap-go-pkg-prepare # Builds link command (for lower level go build)
 	export GOROOT="$(CURDIR)/${DIST}/tmp-bootstrap/go" && \
 	export BUILD_DIR="$$GOROOT/src/cmd/link/" && \
 	export OUT_DIR="${DIST}/fs/usr/lib/go/pkg/tool/js_wasm" && \
 	mkdir -p "$$OUT_DIR" && \
-	cd "$$BUILD_DIR" && GOOS=js GOARCH=wasm go build -o "$(CURDIR)/$$OUT_DIR/link" -v .
+	cd "$$BUILD_DIR" && GOOS=js GOARCH=wasm go build -trimpath -o "$(CURDIR)/$$OUT_DIR/link" -v .
 
 wasm-opt: fs # OPTIONAL: Optimizes all wasm files in ${DIST}/
 	[ -z "${WASM_OPT_DISABLE}" ] && command -v wasm-opt && \

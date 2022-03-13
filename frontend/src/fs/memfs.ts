@@ -118,37 +118,6 @@ export const openVirtualFSMemory = () => {
         }
     }
 
-    // HACK: Open using string flags (instead of received integer flags)
-    myMemoryFS.openOriginal2 = myMemoryFS.open
-    myMemoryFS.open = function (path, flags, mode?, callback?) {
-        let myFlags = "r"
-        const O = myMemoryFS.constants
-
-        // Convert numeric flags to string flags
-        // FIXME: maybe wrong...
-        if (flags & O.O_WRONLY) { // "w"
-            myFlags = "w"
-            if (flags & O.O_EXCL) {
-                myFlags = "wx"
-            }
-        } else if (flags & O.O_RDWR) { // "r+" or "w+"
-            if (flags & O.O_CREAT && flags & O.O_TRUNC) { // w+
-                if (flags & O.O_EXCL) {
-                    myFlags = "wx+"
-                } else {
-                    myFlags = "w+"
-                }
-            } else { // r+
-                myFlags = "r+"
-            }
-        } else if (flags & O.O_APPEND) { // "a"
-            return callback(enosys())
-        }
-        // TODO: handle other cases
-
-        return myMemoryFS.openOriginal2(path, myFlags, mode, callback)
-    }
-
     // HACK: Fix all stat calls (proper output formatting)
     let statFix = function (pass, retStat, callback) {
         if (!retStat) { // Error: assume not found

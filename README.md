@@ -24,7 +24,7 @@ executables (for any platform) from the web. It also runs the compiled code, wit
 The result is a static website that can compile and run *most* Go code (see Known limitations below) from the client's
 browser.
 
-### Do you only want wasm_exec.js with filesystem support?
+### Do you only want to extend wasm_exec.js with filesystem support?
 
 Download it from [TODO].
 

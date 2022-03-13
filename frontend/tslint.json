@@ -42,7 +42,7 @@
       "one-line": [true, "check-open-brace", "check-whitespace"],
       "quotemark": [true, "double"],
       "radix": false,
-      "semicolon": [false, "never"],
+      "semicolon": [true, "never"],
       "switch-default": true,
       "trailing-comma": [
         true,
