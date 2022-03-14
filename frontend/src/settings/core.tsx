@@ -3,7 +3,7 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome"
 import ProgressBar from "@ramonak/react-progress-bar"
 import React from "react"
 import {openVirtualFS} from "../fs/fs"
-import {runGoAsync, CmdGoPath} from "../go/build"
+import {goRun, CmdGoPath} from "../go/build"
 import {setUpGoInstall} from "../go/setup"
 import "./core.css"
 import {VirtualFileBrowser} from "./fs"
@@ -30,7 +30,7 @@ export class Settings extends React.Component<{}, SettingsState> {
         let progressHandler = async (p: number) => this.setState((prevState) => ({...prevState, loadingProgress: p}))
         await setUpGoInstall(this.state.fs, progressHandler)
         await progressHandler(-1) // Loading finished!
-        await runGoAsync(this.state.fs, CmdGoPath, ["version"])
+        await goRun(this.state.fs, CmdGoPath, ["version"])
     }
 
     openTrigger = () => {
