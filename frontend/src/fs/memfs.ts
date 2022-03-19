@@ -113,7 +113,7 @@ export const openVirtualFSMemory = () => {
             callback(null, n, buf)
         } else {
             // buf:
-            buf = vfs.Buffer.from(buf)
+            // buf = myMemoryFS.Buffer.from(buf)
             return myMemoryFS.writeOriginal2(fd, buf, offset, length, position, callback)
         }
     }
@@ -154,8 +154,8 @@ export const openVirtualFSMemory = () => {
     myMemoryFS.closeOriginal2 = myMemoryFS.close
     myMemoryFS.close = function (fd, callback) {
         return myMemoryFS.closeOriginal2(fd, function () {
-            if (typeof fd === "undefined") fd = null
-            return callback(fd, callback)
+            // if (!fd) fd = null
+            return callback(null, callback)
         })
     }
 

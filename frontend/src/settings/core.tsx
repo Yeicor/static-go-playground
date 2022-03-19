@@ -6,7 +6,7 @@ import {openVirtualFS} from "../fs/fs"
 import {goRun, CmdGoPath} from "../go/build"
 import {setUpGoInstall} from "../go/setup"
 import "./core.css"
-import {VirtualFileBrowser} from "./fs"
+import {VirtualFileBrowser} from "./vfs"
 
 type SettingsState = {
     loadingProgress: number, // If >= 0, it is loading (downloading FS, compiling code, etc.). The maximum is 1.
@@ -15,9 +15,11 @@ type SettingsState = {
 }
 
 export class Settings extends React.Component<{}, SettingsState> {
+    vfsBrowser: React.RefObject<VirtualFileBrowser>
 
     constructor(props: {}, context: any) {
         super(props, context)
+        this.vfsBrowser = React.createRef()
         this.state = {
             loadingProgress: 0.0,
             open: true,
@@ -29,8 +31,9 @@ export class Settings extends React.Component<{}, SettingsState> {
         // Set up root filesystem (go installation), while reporting progress
         let progressHandler = async (p: number) => this.setState((prevState) => ({...prevState, loadingProgress: p}))
         await setUpGoInstall(this.state.fs, progressHandler)
-        await progressHandler(-1) // Loading finished!
+        await this.vfsBrowser.current.refreshFilesCwd() // Refresh the newly added files
         await goRun(this.state.fs, CmdGoPath, ["version"])
+        await progressHandler(-1) // Loading finished!
     }
 
     openTrigger = () => {
@@ -40,7 +43,7 @@ export class Settings extends React.Component<{}, SettingsState> {
     render() {
         return <div id={"sgp-settings"} className={"tooltip"}>
             {this.renderSettingsTrigger(this.state.loadingProgress)}
-            {this.state.open ? this.renderSettings() : <></>}
+            {this.renderSettings()}
         </div>
     }
 
@@ -54,9 +57,8 @@ export class Settings extends React.Component<{}, SettingsState> {
     }
 
     renderSettings = () => {
-        return <div className={"tooltip-content"}>
-            Settings!
-            <VirtualFileBrowser fs={this.state.fs}/>
+        return <div className={"tooltip-content settings-tooltip" + (this.state.open ? " tooltip-visible" : "")}>
+            <VirtualFileBrowser fs={this.state.fs} ref={this.vfsBrowser}/>
         </div>
     }
 }

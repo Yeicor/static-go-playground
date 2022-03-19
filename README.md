@@ -12,7 +12,7 @@ TODO: instructions
     - Supports multiple files and packages.
     - [ ] Supports build tags.
 - Full filesystem abstraction (TODO: optionally persistent) for both the compiler and running programs.
-- Full DOM access for running programs.
+- Full DOM access for running programs (TODO: and optional basic terminal emulation).
 - [ ] Code editor.
 - [ ] Download any example/demo project on startup.
 

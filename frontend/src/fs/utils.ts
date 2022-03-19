@@ -4,7 +4,7 @@ import JSZip from "jszip"
 /**
  * Boilerplate for converting fs callbacks to Promise calls
  */
-export const fsAsync = async (fs, method: string, fsUrl: string, extra?) => {
+export const fsAsync = async (fs: any, method: string, fsUrl: string, extra?) => {
     return new Promise(((resolve, reject) => {
         let cb = (err, data) => {
             if (err) {
@@ -23,32 +23,40 @@ export const fsAsync = async (fs, method: string, fsUrl: string, extra?) => {
     }))
 }
 
+export const stat = async (fs: any, path: string) => {
+    return await fsAsync(fs, "stat", path) as Stats
+}
+
+export const readDir = async (fs: any, path: string) => {
+    return await fsAsync(fs, "readdir", path) as string[]
+}
+
 /**
  * Explores all descendant files of path recursively (until false is returned by callback or all files are explored).
  *
  * In case of directories, it runs the callback for both enter and exit.
  */
-export const findRecursive = async (fs, path: string, cb: (path: string, stat: Stats, enter: boolean) => Promise<boolean>): Promise<boolean> => {
-    let stat = await fsAsync(fs, "stat", path) as Stats
-    if (stat.isDirectory()) {
+export const findRecursive = async (fs: any, path: string, cb: (path: string, stat: Stats, enter: boolean) => Promise<boolean>): Promise<boolean> => {
+    let statVal = await stat(fs, path)
+    if (statVal.isDirectory()) {
         // Notify of directory start
-        if (!await cb(path, stat, true)) {
+        if (!await cb(path, statVal, true)) {
             return false
         }
         // Keep exploring
-        let dirEntries = await fsAsync(fs, "readdir", path) as string[]
+        let dirEntries = await readDir(fs, path)
         for (let dirEntry of dirEntries) {
             if (!await findRecursive(fs, path + "/" + dirEntry, cb)) {
                 return false
             }
         }
         // Notify of directory end
-        if (!await cb(path, stat, false)) {
+        if (!await cb(path, statVal, false)) {
             return false
         }
     } else {
         // Just notify the file
-        if (!await cb(path, stat, true)) {
+        if (!await cb(path, statVal, true)) {
             return false
         }
     }
@@ -59,17 +67,18 @@ let cachedFiles = {} // fs URL to bytes (needed as full file read from virtual f
 /**
  * Reads with cache (if available).
  */
-export const readCache = async (fs, path: string): Promise<Uint8Array> => {
+export const readCache = async (fs: any, path: string): Promise<Uint8Array> => {
     if (fs in cachedFiles && path in cachedFiles[fs]) {
         return cachedFiles[fs][path]
     }
-    return await fsAsync(fs, "read", path) as Uint8Array
+    // return await fsAsync(fs, "readFile", path) as Uint8Array
+    return fs.readFileSync(path) as Uint8Array
 }
 
 /**
  * Write with cache (if needed).
  */
-export const writeCache = async (fs, path: string, bs: Uint8Array) => {
+export const writeCache = async (fs: any, path: string, bs: Uint8Array) => {
     let buf = Buffer.from(bs)
     if (buf.length > 2 * 1024 * 1024) {
         // console.log("Caching large file:", path)
@@ -84,7 +93,7 @@ export const writeCache = async (fs, path: string, bs: Uint8Array) => {
 /**
  * Reads the file at path and all descendant files recursively, executing cb for each of them.
  */
-export const readRecursive = async (fs, path: string, cb: (path: string, isDir: boolean, bs: Uint8Array) => Promise<boolean>): Promise<boolean> => {
+export const readRecursive = async (fs: any, path: string, cb: (path: string, isDir: boolean, bs: Uint8Array) => Promise<boolean>): Promise<boolean> => {
     return await findRecursive(fs, path, async (path1, stat1, enter) => {
         if (stat1.isDirectory()) {
             if (enter) {
@@ -100,14 +109,14 @@ export const readRecursive = async (fs, path: string, cb: (path: string, isDir: 
 /**
  * Deletes path and all descendant files recursively.
  */
-export const deleteRecursive = async (fs, path: string) => {
+export const deleteRecursive = async (fs: any, path: string) => {
     await findRecursive(fs, path, async (path1, stat1, enter) => {
         if (stat1.isDirectory()) {
             if (!enter) { // Delete the directory after the contents
-                await fsAsync(fs, "rmdir", path)
+                await fsAsync(fs, "rmdir", path1)
             }
         } else {
-            await fsAsync(fs, "unlink", path)
+            await fsAsync(fs, "unlink", path1)
         }
         return true
     })
@@ -120,13 +129,13 @@ export const deleteRecursive = async (fs, path: string) => {
  *
  * It will overwrite all conflicting files, without deleting anything else in the hierarchy.
  */
-export const importZip = async (fs, zipBytes: Uint8Array, extractAt: string, progress: (p: number) => Promise<any>) => {
+export const importZip = async (fs: any, zipBytes: Uint8Array, extractAt: string, progress?: (p: number) => Promise<any>) => {
     const initialLoadProgress = 0.2
-    await progress(0)
+    if (progress) await progress(0)
     const zip = await JSZip.loadAsync(zipBytes)
     let numFilesProcessed = 0
     let numFiles = Object.keys(zip.files).length
-    await progress(initialLoadProgress)
+    if (progress) await progress(initialLoadProgress)
     let allPromises = []
     zip.forEach((relativePath, file) => {
         let decompressionPromise = (async () => {
@@ -143,23 +152,23 @@ export const importZip = async (fs, zipBytes: Uint8Array, extractAt: string, pro
                 await writeCache(fs, fileNewPath, decompressedBytes)
             }
             numFilesProcessed++
-            await progress(initialLoadProgress + numFilesProcessed / numFiles * (1 - initialLoadProgress))
+            if (progress) await progress(initialLoadProgress + numFilesProcessed / numFiles * (1 - initialLoadProgress))
         })
         allPromises.push(decompressionPromise())
     })
     await Promise.all(allPromises)
-    await progress(1)
+    if (progress) await progress(1)
 }
 
 /**
  * Creates a zip from the given path (returns a buffer in-memory holding all files)
  */
-export const exportZip = async (fs, paths: [string], progress: (p: number) => Promise<any>): Promise<Uint8Array> => {
+export const exportZip = async (fs: any, paths: [string], progress: (p: number) => Promise<any>): Promise<Uint8Array> => {
     const finalLoadProgress = 0.2
     const zip = new JSZip()
     let numFiles = 0 // First count files (should be very fast) to report progress
     for (let path of paths) {
-        await findRecursive(fs, path, async (path1, stat, enter) => {
+        await findRecursive(fs, path, async (path1, stat_ign, enter) => {
             if (enter) {
                 numFiles++
             }

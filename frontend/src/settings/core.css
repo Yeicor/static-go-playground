@@ -4,34 +4,64 @@
     right: 0;
     margin: 0;
     padding: 0;
-    font-size: 48px;
+    font-size: 32px;
     overflow: hidden;
 }
 
 .tooltip .tooltip-content {
-    width: min(600px, calc(100vw - 40px));
     background-color: #ddd !important;
-    padding: 5px;
-    border-radius: 6px;
+    padding: 10px;
+    border-radius: 10px;
 
     /* Position the tooltip text */
     position: absolute;
     z-index: 1;
-    top: 66px;
-    right: 0;
+    top: 47px;
+    right: 5px;
     margin-left: -60px;
+
+    /* Visibility animation */
+    transition: opacity 0.2s linear;
+    /*display: none;*/
+    opacity: 0;
+}
+
+.tooltip .tooltip-content.tooltip-visible {
+    /*display: block;*/
+    opacity: 1;
 }
 
 /* Tooltip arrow */
 .tooltip .tooltip-content::after {
     content: "";
     position: absolute;
-    bottom: 100%;
+    top: -17px;
     right: 20px;
-    margin-right: -5px;
+    margin-right: -20px;
     border-width: 10px;
     border-style: solid;
     border-color: transparent transparent #ddd transparent;
+}
+
+.settings-tooltip {
+    resize: horizontal;
+    max-height: calc(100vh - 100px);
+    overflow: auto;
+}
+
+.settings-options {
+    display: flex;
+    margin-bottom: 4px;
+}
+
+.settings-options > label {
+    flex: 10000;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 1; /* number of lines to show */
+    line-clamp: 1;
+    -webkit-box-orient: vertical;
 }
 
 .spinning {

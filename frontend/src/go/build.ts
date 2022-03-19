@@ -22,13 +22,16 @@ export const goRun = async (fs: any, fsUrl: string, argv: string[] = [], cwd = "
     // HACK: Dynamically prepare wasm_exec.js each time with the given filesystem
     let globalHack = { // <-- Fake global variable (only for the current context)
         // Shared globals
+        ...global, // Provide all globals, overriding some of them
         "Uint8Array": Uint8Array,
         "TextEncoder": TextEncoder,
         "TextDecoder": TextDecoder,
         "performance": performance,
         "crypto": crypto,
+        "Date": Date, // TODO: Find a better fix without manual work if more APIs are needed
         // Custom globals
         "fs": fs,
+        "Buffer": fs.Buffer,
         "process": getProcessForFS(fs),
         "Go": undefined // Will be set when parsed code is executed
     }

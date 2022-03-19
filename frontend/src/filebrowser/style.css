@@ -1,0 +1,43 @@
+
+.mfb-top-bar {
+    display: flex;
+    margin-bottom: 2px;
+}
+
+.mfb-top-bar-cwd {
+    /* Grow this instead of actions */
+    flex: 10000;
+    min-width: 0;
+}
+
+.mfb-list-item {
+    cursor: default;
+    display: flex;
+    max-width: 100%;
+}
+
+.mfb-list-item-non-actions {
+    display: flex;
+    flex: 10000;
+}
+
+.mfb-list-item:hover, .mfb-list-item.selected {
+    background: #ccc;
+}
+
+.mfb-list-item-icon {
+}
+
+.mfb-list-item-name {
+    flex: 10000;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mfb-list-item-size {
+    color: #555;
+}
+
+.mfb-action {
+    padding: 2px;
+}
