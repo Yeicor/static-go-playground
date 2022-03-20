@@ -27,7 +27,7 @@ func parse(buildDir string) (*parsedTreeNode, error) {
 	if err != nil {
 		return nil, err
 	}
-	return parseRecursive(fset, buildDirAbs, "???", buildDirAbs, false, map[string]struct{}{})
+	return parseRecursive(fset, buildDirAbs, "main", buildDirAbs, false, map[string]struct{}{})
 }
 
 func parseRecursive(fset *token.FileSet, pkgDir, impPath, buildDir string, isInternal bool, explored map[string]struct{}) (*parsedTreeNode, error) {

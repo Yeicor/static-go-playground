@@ -14,7 +14,7 @@ export class FileList extends React.Component<FileListProps, {}> {
         let now = Date.now()
         let deltaClick = now - this.lastClickEpochMillis
         this.lastClickEpochMillis = now
-        if (deltaClick < 500) {
+        if (deltaClick > 10 /* HACK: to support zip uploads */ && deltaClick < 500) {
             // Handle double click: open
             let resetOnOpen = this.props.onOpen && await this.props.onOpen(f)
             if (resetOnOpen) {
@@ -23,23 +23,23 @@ export class FileList extends React.Component<FileListProps, {}> {
             } else {
                 this.selectedFile = f.name
             }
-            return resetOnOpen
+            // return resetOnOpen
         } // TODO: Slow double click rename: else if (deltaClick < 1500)
         // Handle single click: select
         let selectOk = this.props.onSelect && await this.props.onSelect(f)
         if (selectOk) {
             this.selectedFile = f.name
         }
-        return selectOk
+        // return selectOk
     }
 
     render() {
         return <div className={"mfb-list"}>
             {this.props.files.map((f: FileData) => {
                 return <div className={"mfb-list-item" + (this.selectedFile === f.name ? " selected" : "")}
-                            key={f.name}>
-                    <span className={"mfb-list-item-non-actions"}
-                          onClick={(evt) => this.handleClick(evt as any, f)}>
+                            key={f.name} onClick={(evt) => this.handleClick(evt as any, f)}>
+                    {/*<span className={"mfb-list-item-non-actions"}*/}
+                    {/*      onClick={(evt) => this.handleClick(evt as any, f)}>*/}
                         <FontAwesomeIcon icon={f.numChildren >= 0 ? faFolder : faFile}
                                          className={"mfb-list-item-icon"}/>&nbsp;
                         <span className={"mfb-list-item-name"} title={f.name}>{f.name}</span>
@@ -49,7 +49,7 @@ export class FileList extends React.Component<FileListProps, {}> {
                                 prettyBytes(f.size, {maximumFractionDigits: 0})
                                     .replace(/[ B]/, "")}
                         </span>&nbsp;
-                    </span>
+                    {/*</span>*/}
                     {f.actions}
                 </div>
             })}

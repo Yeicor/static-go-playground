@@ -51,9 +51,14 @@ func compileRecursive(node *parsedTreeNode, isRoot bool, cfg *os.File, buildDir 
 	if err != nil {
 		log.Fatal(err)
 	}
-	command := []string{
+	compileCommand := []string{
 		"compile",
 		"-o", pkgObj,
+		"-p", node.importPath,
+		"-complete",
+		// TODO: -race optional support
+		// Go also writes build ID hashes to the pack files by default (and may expect them, so give any ID)
+		"-buildid", hashString(node.importPath),
 		"-pack",
 		"-importcfg", cfg.Name(),
 	}
@@ -62,7 +67,7 @@ func compileRecursive(node *parsedTreeNode, isRoot bool, cfg *os.File, buildDir 
 	for i, ab := range node.goFileNames {
 		filesAbs[i] = filepath.Join(node.dir, ab)
 	}
-	command = append(command, filesAbs...)
-	commands = append(commands, command)
+	compileCommand = append(compileCommand, filesAbs...)
+	commands = append(commands, compileCommand)
 	return commands, linkPackages
 }

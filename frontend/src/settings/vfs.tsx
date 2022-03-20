@@ -2,8 +2,10 @@ import React from "react"
 import {
     ActionBuild,
     ActionDelete,
+    ActionDownloadZip,
     ActionFolderUploadZip,
     ActionRename,
+    ActionRun,
     ActionTopBarNewFile,
     ActionTopBarNewFolder,
     ActionTopBarRefresh,
@@ -44,11 +46,14 @@ export class VirtualFileBrowser extends React.Component<{ fs: any }, { cwd: stri
                 actions: [
                     <ActionRename fb={this} folderOrFilePath={filePath} key={"rename"}/>,
                     <ActionDelete fb={this} folderOrFilePath={filePath} key={"delete"}/>,
-                    <ActionBuild fb={this} folderOrFilePath={filePath} key={"build"}/>
+                    <ActionBuild fb={this} folderOrFilePath={filePath} isDir={fileStat.isDirectory()} key={"build"}/>,
+                    <ActionRun fb={this} folderOrFilePath={filePath} isDir={fileStat.isDirectory()} key={"run"}/>,
+                    <ActionDownloadZip fb={this} folderOrFilePath={filePath} key={"download-zip"}/>
                 ]
             }
             if (fileStat.isDirectory()) {
-                res.actions.push(<ActionFolderUploadZip fb={this} folderPath={filePath} key={"upload-zip"}/>)
+                res.actions.splice(4, 0,
+                    <ActionFolderUploadZip fb={this} folderPath={filePath} key={"upload-zip"}/>)
             }
             return res as FileData
         }))
@@ -79,17 +84,8 @@ export class VirtualFileBrowser extends React.Component<{ fs: any }, { cwd: stri
         }
     }
 
-    toggleDOMConsole = async () => {
-        // TODO!
-    }
-
     render() {
         return <>
-            <div className={"settings-options"}>
-                <label htmlFor={"enable-console"}>DOM console</label>
-                <input id={"enable-console"} type={"checkbox"} checked={true} onChange={this.toggleDOMConsole}
-                       title={"Show the console as the main content (may conflict with your code)"}/>
-            </div>
             <FileBrowser cwd={this.state.cwd} files={this.state.files} trySetCwd={this.chdirChecked}
                          onOpen={this.onOpenFile}>
                 <ActionTopBarUp fb={this}/>

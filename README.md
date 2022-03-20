@@ -24,13 +24,19 @@ executables (for any platform) from the web. It also runs the compiled code, wit
 The result is a static website that can compile and run *most* Go code (see Known limitations below) from the client's
 browser.
 
+Why? To learn how the Go compiler works and to provide better (hackable) demos for most Go projects with easy
+deployment.
+
 ### Do you only want to extend wasm_exec.js with filesystem support?
 
 Download it from [TODO].
 
+WARNING: The filesystem is good enough for the Go compiler to work, but may still have some bugs: open an issue if you
+find one.
+
 ### Use it to provide hackable examples for your Go project!
 
-TODO
+TODO: instructions
 
 ## Building from source
 

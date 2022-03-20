@@ -89,8 +89,13 @@ export const openVirtualFSMemory = () => {
     let outputBuf = ""
     const decoder = new TextDecoder("utf-8")
     myMemoryFS.writeSyncOriginal2 = myMemoryFS.writeSync
-    myMemoryFS.writeSync = function (fd, buf) {
+    myMemoryFS.writeSync = function (fd, buf, offset, length, position, callback) {
         if (fd === 1 || fd === 2) {
+            // TODO: Custom console listener (also handling stdin!)
+            if (offset !== 0 || length !== buf.length || position !== null) {
+                if (callback) callback(enosys())
+                return -1
+            }
             outputBuf += decoder.decode(buf)
             const nl = outputBuf.lastIndexOf("\n")
             if (nl !== -1) {
@@ -99,23 +104,13 @@ export const openVirtualFSMemory = () => {
             }
             return buf.length
         } else {
-            return myMemoryFS.writeSyncOriginal2(fd, buf)
+            return myMemoryFS.writeSyncOriginal2(fd, buf, offset, length, position)
         }
     }
     myMemoryFS.writeOriginal2 = myMemoryFS.write
     myMemoryFS.write = function (fd, buf, offset, length, position, callback) {
-        if (fd === 1 || fd === 2) {
-            if (offset !== 0 || length !== buf.length || position !== null) {
-                callback(enosys())
-                return
-            }
-            const n = myMemoryFS.writeSync(fd, buf)
-            callback(null, n, buf)
-        } else {
-            // buf:
-            // buf = myMemoryFS.Buffer.from(buf)
-            return myMemoryFS.writeOriginal2(fd, buf, offset, length, position, callback)
-        }
+        let res = myMemoryFS.writeSync(fd, buf, offset, length, position, callback) // HACK: reuses sync code: shouldn't matter
+        if (res >= 0) callback(null, res)
     }
 
     // HACK: Fix all stat calls (proper output formatting)

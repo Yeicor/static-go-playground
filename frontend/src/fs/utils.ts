@@ -80,8 +80,9 @@ export const readCache = async (fs: any, path: string): Promise<Uint8Array> => {
  */
 export const writeCache = async (fs: any, path: string, bs: Uint8Array) => {
     let buf = Buffer.from(bs)
-    if (buf.length > 2 * 1024 * 1024) {
-        // console.log("Caching large file:", path)
+    if (buf.length > 64 * 1024) {
+        // console.log("Caching \"large\" file:", path)
+        // TODO: Fix VFS read performance problems to remove this
         if (!(fs in cachedFiles)) {
             cachedFiles[fs] = {}
         }
@@ -97,10 +98,10 @@ export const readRecursive = async (fs: any, path: string, cb: (path: string, is
     return await findRecursive(fs, path, async (path1, stat1, enter) => {
         if (stat1.isDirectory()) {
             if (enter) {
-                return await cb(path1, true, new Uint8Array(0))
+                return await cb(path1, true, null)
             }
         } else {
-            let buf = await readCache(fs, path)
+            let buf = await readCache(fs, path1)
             return await cb(path1, false, buf)
         }
     })
@@ -145,7 +146,7 @@ export const importZip = async (fs: any, zipBytes: Uint8Array, extractAt: string
                 try {
                     await fsAsync(fs, "mkdir", fileNewPath)
                 } catch (e) {
-                    console.log("importZip: ignoring error on mkdir:", e)
+                    // console.log("importZip: ignoring error on mkdir (probably already exists):", e)
                 }
             } else {
                 let decompressedBytes = await file.async("uint8array")
@@ -163,36 +164,48 @@ export const importZip = async (fs: any, zipBytes: Uint8Array, extractAt: string
 /**
  * Creates a zip from the given path (returns a buffer in-memory holding all files)
  */
-export const exportZip = async (fs: any, paths: [string], progress: (p: number) => Promise<any>): Promise<Uint8Array> => {
+export const exportZip = async (fs: any, paths: [string], progress?: (p: number) => Promise<any>): Promise<Uint8Array> => {
     const finalLoadProgress = 0.2
-    const zip = new JSZip()
-    let numFiles = 0 // First count files (should be very fast) to report progress
-    for (let path of paths) {
-        await findRecursive(fs, path, async (path1, stat_ign, enter) => {
-            if (enter) {
-                numFiles++
+    let exportedZip = new JSZip()
+    let getSubPath = (fullPath: string, relTo: string) => {
+        if (paths.length === 1) {
+            // Write each directory and file of the given path to the zip, relative to the root path.
+            if (fullPath.length > relTo.length) {
+                fullPath = fullPath.substring(relTo.length)
+            } else {
+                fullPath = ""
             }
+        }
+        return fullPath
+    }
+    let numFiles = 0 // First count files (should be very fast) to report progress (while generating directories)
+    for (let path of paths) {
+        await findRecursive(fs, path, async (path1, stat, _enter) => {
+            if (stat.isDirectory()) {
+                exportedZip.file(getSubPath(path1, path), null, {dir: true})
+                return true
+            }
+            numFiles++
             return true
         })
     }
     let numFilesProcessed = 0
     for (let path of paths) {
-        await readRecursive(fs, path, async (childPath, isDir, bs) => {
-            let childSubPath: string
-            if (paths.length === 1) {
-                // Write each directory and file of the given path to the zip, relative to the root path.
-                childSubPath = childPath.slice(path.length + 1)
-            } else {
-                childSubPath = childPath
+        await readRecursive(fs, path, async (childPath, isDir, contents) => {
+            if (isDir) return true // Already created
+            let subPath = getSubPath(childPath, path);
+            if (subPath == "") { // Exporting only a single file, fix the name
+                subPath = path.substring(path.lastIndexOf("/") + 1)
             }
-            zip.file(childSubPath, bs, {dir: isDir})
+            // FIXME: Download multiple files in different directories fails.
+            exportedZip.file(subPath, contents, {dir: false})
             numFilesProcessed++
-            await progress(numFilesProcessed / numFiles * (1 - finalLoadProgress))
+            if (progress) await progress(numFilesProcessed / numFiles * (1 - finalLoadProgress))
             return true
         })
     }
-    await progress(1 - finalLoadProgress)
-    let res = await zip.generateAsync({type: "uint8array"})
-    await progress(1)
+    if (progress) await progress(1 - finalLoadProgress)
+    let res = await exportedZip.generateAsync({type: "uint8array"})
+    if (progress) await progress(1)
     return res
 }

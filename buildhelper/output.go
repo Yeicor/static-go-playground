@@ -16,6 +16,7 @@ func output(commands [][]string, buildDir string, err error) {
 		// Also run commands
 		if os.Getenv("ALSO_EXECUTE_COMMANDS") != "" {
 			cmd := exec.Command("go", append([]string{"tool"}, command...)...)
+			cmd.Env = append(os.Environ(), "GOOS", "js", "GOARCH", "wasm")
 			cmd.Dir = buildDir
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr

@@ -1,5 +1,6 @@
 import {
     faArrowUp,
+    faDownload,
     faFolderPlus,
     faHammer,
     faPencilAlt,
@@ -11,7 +12,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons"
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome"
 import React from "react"
-import {deleteRecursive, fsAsync, importZip} from "../fs/utils"
+import {deleteRecursive, exportZip, fsAsync, importZip} from "../fs/utils"
 import {goBuild, goRun} from "../go/build"
 import {VirtualFileBrowser} from "../settings/vfs"
 
@@ -31,6 +32,10 @@ export class Action<P, S> extends React.Component<P, S> {
         console.log("Action clicked")
     }
 
+    visible = () => {
+        return true
+    }
+
     enabled = () => {
         return true
     }
@@ -40,6 +45,9 @@ export class Action<P, S> extends React.Component<P, S> {
     }
 
     render() {
+        if (!this.visible()) {
+            return <></>
+        }
         return <button onClick={this.onClick} className={"mfb-action"} disabled={!this.enabled()}
                        title={this.tooltip()} key={this.tooltip()}>
             <FontAwesomeIcon icon={this.getIcon()}/>
@@ -163,7 +171,7 @@ export class ActionRename extends Action<{ fb: VirtualFileBrowser, folderOrFileP
 export class ActionFolderUploadZip extends Action<{ fb: VirtualFileBrowser, folderPath: string }, {}> {
     inputRef: React.RefObject<HTMLInputElement>
 
-    constructor(props: { fb: VirtualFileBrowser; folderPath: string }, context: any, onClick: () => void) {
+    constructor(props: { fb: VirtualFileBrowser; folderPath: string }, context: any) {
         super(props, context)
         this.inputRef = React.createRef()
     }
@@ -173,7 +181,7 @@ export class ActionFolderUploadZip extends Action<{ fb: VirtualFileBrowser, fold
     }
 
     tooltip = () => {
-        return "Extract a zip file inside this directory"
+        return "Upload and extract a zip file inside this directory"
     }
 
     onClick = () => {
@@ -213,11 +221,33 @@ export class ActionFolderUploadZip extends Action<{ fb: VirtualFileBrowser, fold
     }
 }
 
-export class ActionDownloadZip extends Action<{ fb: VirtualFileBrowser, folderPath: string }, {}> {
-    // TODO!
+export class ActionDownloadZip extends Action<{ fb: VirtualFileBrowser, folderOrFilePath: string }, {}> {
+    getIcon = () => {
+        return faDownload
+    }
+
+    tooltip = () => {
+        return "Download a zip file containing this file/folder"
+    }
+
+    onClick = async () => {
+        let bytes = await exportZip(this.props.fb.props.fs, [this.props.folderOrFilePath], undefined); // TODO: Progress
+        let name = this.props.folderOrFilePath;
+        name = name.substring(name.lastIndexOf("/") + 1, name.length) + ".zip"
+        this.saveByteArray(name, bytes)
+    }
+
+    saveByteArray(name: string, bytes: Uint8Array) {
+        const blob = new Blob([bytes], {type: "application/pdf"});
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = name;
+        link.click();
+    };
+
 }
 
-export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePath: string }, {}> {
+export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePath: string, isDir: boolean }, {}> {
     getIcon = () => {
         return faHammer
     }
@@ -226,14 +256,30 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
         return "Build a Go main package/file (generating a.out)"
     }
 
+    visible = () => {
+        // TODO: Check if it may be a Go main package/file
+        return true
+    }
+
     onClick = async () => {
         let fs = this.props.fb.props.fs
         /* TODO: progress */
-        await goBuild(fs, this.props.folderOrFilePath, this.props.folderOrFilePath + "a.out")
+        let buildFile = this.props.folderOrFilePath
+        if (this.props.isDir && !buildFile.endsWith("/")) { // Add final / for directories
+            buildFile += "/"
+        }
+        let outFile = buildFile
+        if (!this.props.isDir) { // Output to parent for files
+            // FIXME: Building single files
+            outFile = outFile.substring(0, outFile.lastIndexOf("/") + 1)
+        }
+        outFile += "a.out"
+        await goBuild(fs, buildFile, outFile)
+        await this.props.fb.refreshFilesCwd()
     }
 }
 
-export class ActionFileRun extends Action<{ fb: VirtualFileBrowser, folderPath: string }, {}> {
+export class ActionRun extends Action<{ fb: VirtualFileBrowser, folderOrFilePath: string, isDir: boolean }, {}> {
     getIcon = () => {
         return faPlay
     }
@@ -242,8 +288,31 @@ export class ActionFileRun extends Action<{ fb: VirtualFileBrowser, folderPath: 
         return "Run this js/wasm Go executable (cwd is this directory)"
     }
 
+    visible = () => {
+        if (this.props.isDir) {
+            let exePath = this.getExePath();
+            try {
+                this.props.fb.props.fs.statSync(exePath)
+                return true
+            } catch (doesNotExist) {
+                return false
+            }
+        } else {
+            return this.props.folderOrFilePath.endsWith(".out")
+        }
+    }
+
     onClick = async () => {
         let fs = this.props.fb.props.fs
-        await goRun(fs, "a.out", [], this.props.fb.state.cwd)
+        let exePath = this.getExePath();
+        await goRun(fs, exePath, [], this.props.fb.state.cwd)
+    }
+
+    private getExePath(): string {
+        let exePath = this.props.folderOrFilePath
+        if (this.props.isDir) {
+            exePath = this.props.folderOrFilePath + "/a.out"
+        }
+        return exePath;
     }
 }
