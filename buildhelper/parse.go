@@ -19,24 +19,51 @@ type parsedTreeNode struct {
 	imports               []*parsedTreeNode
 }
 
-func parse(buildDir string) (*parsedTreeNode, error) {
-	// build.Default.ImportDir() would avoid duplication and handle tags and edge cases, so why not?
+func parse(buildDir string, buildCtx build.Context) (*parsedTreeNode, error) {
+	// buildCtx.ImportDir() would avoid duplication and handle tags and edge cases, so why not?
 	//  - Because it executes go list, which is available, but requires GOCACHE to be populated.
 	fset := token.NewFileSet()
 	buildDirAbs, err := filepath.Abs(buildDir)
 	if err != nil {
 		return nil, err
 	}
-	return parseRecursive(fset, buildDirAbs, "main", buildDirAbs, false, map[string]struct{}{})
+	return parseRecursive(fset, buildDirAbs, "main", buildDirAbs, buildCtx, false, map[string]struct{}{})
 }
 
-func parseRecursive(fset *token.FileSet, pkgDir, impPath, buildDir string, isInternal bool, explored map[string]struct{}) (*parsedTreeNode, error) {
-	pkgs, err := parser.ParseDir(fset, pkgDir, nil, parser.AllErrors)
+func parseRecursive(fset *token.FileSet, pkgDirOrFile, impPath, buildDir string, buildCtx build.Context, isInternal bool, explored map[string]struct{}) (*parsedTreeNode, error) {
+	// Also handle files as input for root node (like when there are several examples with func main() on the same directory, but only one is wanted)
+	stat, err := os.Stat(pkgDirOrFile)
+	if err != nil {
+		return nil, err
+	}
+	var pkgs map[string]*ast.Package
+	pkgDir := pkgDirOrFile
+	if stat.IsDir() {
+		pkgs, err = parser.ParseDir(fset, pkgDirOrFile, nil, parser.AllErrors)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		pkgDir = filepath.Dir(pkgDirOrFile)
+		buildDir = filepath.Dir(buildDir)
+		file, err := parser.ParseFile(fset, pkgDirOrFile, nil, parser.AllErrors)
+		if err != nil {
+			return nil, err
+		}
+		pkgs = map[string]*ast.Package{
+			"main": {
+				Name:    "main",
+				Scope:   file.Scope,
+				Imports: nil, // We do not use this
+				Files:   map[string]*ast.File{pkgDirOrFile: file},
+			},
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
 	if len(pkgs) != 1 && !isInternal {
-		log.Println("WARN: NOT IMPLEMENTED: found " + strconv.Itoa(len(pkgs)) + " pkgs at " + pkgDir)
+		log.Println("WARN: NOT IMPLEMENTED: found " + strconv.Itoa(len(pkgs)) + " pkgs at " + pkgDirOrFile)
 	}
 	var pkg *ast.Package
 	for _, a := range pkgs {
@@ -54,7 +81,7 @@ func parseRecursive(fset *token.FileSet, pkgDir, impPath, buildDir string, isInt
 	for filePath, file := range pkg.Files {
 		// Check if the file matches build constraints or skip it
 		fileName := filepath.Base(filePath)
-		if ok, err := build.Default.MatchFile(filepath.Dir(filePath), fileName); !ok || err != nil {
+		if ok, err := buildCtx.MatchFile(filepath.Dir(filePath), fileName); !ok || err != nil {
 			continue
 		}
 		// Register the file
@@ -65,15 +92,15 @@ func parseRecursive(fset *token.FileSet, pkgDir, impPath, buildDir string, isInt
 			if importPath == "unsafe" || importPath == "C" {
 				continue
 			}
-			importDir, internal := parseFindDirForImport(importPath, buildDir, build.Default.GOPATH)
+			importDir, internal := parseFindDirForImport(importPath, buildDir, buildCtx.GOPATH)
 			if importDir == "" {
 				return nil, errors.New("Import \"" + importPath + "\" not found!")
 			}
 			// NOTE: internal packages are not required for this use case, so stop recursion
-			// FIXME: Should probably fix problems caused by them as they are likely to also occur in other packages
+			// FIXME: Should probably fix problems raised by them as they are likely to also occur in other packages
 			if _, alreadyExplored := explored[importDir]; !alreadyExplored {
 				explored[importDir] = struct{}{} // Mark as explored (avoid infinite loops)
-				child, err := parseRecursive(fset, importDir, importPath, buildDir, internal, explored)
+				child, err := parseRecursive(fset, importDir, importPath, buildDir, buildCtx, internal, explored)
 				if err != nil {
 					if internal {
 						// Probably, dependency source files are in some vendor directory of the standard library,

@@ -21,5 +21,5 @@ func TestRun(t *testing.T) {
 	if err != nil && !os.IsExist(err) {
 		t.Fatal(err)
 	}
-	Run(".", tdir)
+	Run("main.go", tdir, []string{"example"})
 }

@@ -24,7 +24,7 @@ export class FileList extends React.Component<FileListProps, {}> {
                 this.selectedFile = f.name
             }
             // return resetOnOpen
-        } // TODO: Slow double click rename: else if (deltaClick < 1500)
+        }
         // Handle single click: select
         let selectOk = this.props.onSelect && await this.props.onSelect(f)
         if (selectOk) {
@@ -41,14 +41,14 @@ export class FileList extends React.Component<FileListProps, {}> {
                     {/*<span className={"mfb-list-item-non-actions"}*/}
                     {/*      onClick={(evt) => this.handleClick(evt as any, f)}>*/}
                         <FontAwesomeIcon icon={f.numChildren >= 0 ? faFolder : faFile}
-                                         className={"mfb-list-item-icon"}/>&nbsp;
+                                         className={"mfb-list-item-icon"}/>
                         <span className={"mfb-list-item-name"} title={f.name}>{f.name}</span>
                         <span className={"mfb-list-item-size"}
                               title={f.numChildren >= 0 ? f.numChildren + " children" : f.size + " bytes"}>
                             {f.numChildren >= 0 ? f.numChildren + "c" :
                                 prettyBytes(f.size, {maximumFractionDigits: 0})
                                     .replace(/[ B]/, "")}
-                        </span>&nbsp;
+                        </span>
                     {/*</span>*/}
                     {f.actions}
                 </div>

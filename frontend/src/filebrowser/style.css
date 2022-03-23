@@ -1,7 +1,7 @@
 
 .mfb-top-bar {
     display: flex;
-    margin-bottom: 2px;
+    margin-bottom: 3px;
 }
 
 .mfb-top-bar-cwd {
@@ -11,9 +11,10 @@
 }
 
 .mfb-list-item {
-    cursor: default;
+    user-select: none; /*cursor: default;*/
     display: flex;
     max-width: 100%;
+    padding-top: 2px;
 }
 
 .mfb-list-item-non-actions {
@@ -26,6 +27,7 @@
 }
 
 .mfb-list-item-icon {
+    margin-right: 0.25em;
 }
 
 .mfb-list-item-name {
@@ -36,6 +38,7 @@
 
 .mfb-list-item-size {
     color: #555;
+    margin-right: 0.25em;
 }
 
 .mfb-action {

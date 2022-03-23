@@ -51,7 +51,7 @@
 
 .settings-options {
     display: flex;
-    margin-bottom: 4px;
+    margin-top: 10px;
 }
 
 .settings-options > label {

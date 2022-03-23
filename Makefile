@@ -23,8 +23,6 @@ wasm-exec: # Copy the original wasm_exec.js (with minimal fixes for bundling) fr
 fs: bootstrap-go-pkg cmd-link # Finalizes the filesystem setup
 	mkdir -p "${DIST}/fs/src"  # Sources (and any uploaded files) will be stored here
 
-	# TODO: Optionally include source for example(s) to execute on start or give the user the ability to select!
-
 fs-zip: # Zips the filesystem and remove the original
 	cd "${DIST}/fs" && zip -${ZIP_COMPRESSION} -r - . >../fs.zip
 	rm -r "${DIST}/fs"

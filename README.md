@@ -9,12 +9,11 @@ TODO: instructions
 ## Features
 
 - Full Go Compiler running on the browser: no load for the server & can be deployed easily.
-    - Supports multiple files and packages.
-    - [ ] Supports build tags.
+    - Supports multiple files and packages (including dependencies!).
+    - Supports using custom build tags.
 - Full filesystem abstraction (TODO: optionally persistent) for both the compiler and running programs.
-- Full DOM access for running programs (TODO: and optional basic terminal emulation).
-- [ ] Code editor.
-- [ ] Download any example/demo project on startup.
+- Full DOM access for running programs (and very basic terminal emulation, stdout/stderr-only for now).
+- [ ] Code editor ([Ace](https://ace.c9.io/)).
 
 ## Go Compiler on browser
 

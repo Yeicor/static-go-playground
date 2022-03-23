@@ -80,9 +80,9 @@ export const readCache = async (fs: any, path: string): Promise<Uint8Array> => {
  */
 export const writeCache = async (fs: any, path: string, bs: Uint8Array) => {
     let buf = Buffer.from(bs)
+    // TODO: Fix VFS read performance problems to remove this
     if (buf.length > 64 * 1024) {
         // console.log("Caching \"large\" file:", path)
-        // TODO: Fix VFS read performance problems to remove this
         if (!(fs in cachedFiles)) {
             cachedFiles[fs] = {}
         }
@@ -100,6 +100,7 @@ export const readRecursive = async (fs: any, path: string, cb: (path: string, is
             if (enter) {
                 return await cb(path1, true, null)
             }
+            return true
         } else {
             let buf = await readCache(fs, path1)
             return await cb(path1, false, buf)
@@ -165,6 +166,7 @@ export const importZip = async (fs: any, zipBytes: Uint8Array, extractAt: string
  * Creates a zip from the given path (returns a buffer in-memory holding all files)
  */
 export const exportZip = async (fs: any, paths: [string], progress?: (p: number) => Promise<any>): Promise<Uint8Array> => {
+    if (progress) await progress(0)
     const finalLoadProgress = 0.2
     let exportedZip = new JSZip()
     let getSubPath = (fullPath: string, relTo: string) => {
@@ -197,7 +199,6 @@ export const exportZip = async (fs: any, paths: [string], progress?: (p: number)
             if (subPath == "") { // Exporting only a single file, fix the name
                 subPath = path.substring(path.lastIndexOf("/") + 1)
             }
-            // FIXME: Download multiple files in different directories fails.
             exportedZip.file(subPath, contents, {dir: false})
             numFilesProcessed++
             if (progress) await progress(numFilesProcessed / numFiles * (1 - finalLoadProgress))

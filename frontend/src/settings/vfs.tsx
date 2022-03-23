@@ -15,8 +15,12 @@ import {FileBrowser, FileData} from "../filebrowser/filebrowser"
 import {readDir, stat} from "../fs/utils"
 
 
-export class VirtualFileBrowser extends React.Component<{ fs: any }, { cwd: string, files: Array<FileData> }> {
-    constructor(props: { fs: any }, context: any) {
+type VirtualFileBrowserProps = { fs: any, setProgress?: (p: number) => Promise<void>, getBuildTags?: () => Array<string> };
+
+type VirtualFileBrowserState = { cwd: string, files: Array<FileData> };
+
+export class VirtualFileBrowser extends React.Component<VirtualFileBrowserProps, VirtualFileBrowserState> {
+    constructor(props: VirtualFileBrowserProps, context: any) {
         super(props, context)
         this.state = {cwd: "/", files: []}
     }
