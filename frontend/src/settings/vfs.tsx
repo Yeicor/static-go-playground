@@ -1,4 +1,5 @@
 import React from "react"
+import {CodeEditorWindow} from "../editor/window"
 import {
     ActionBuild,
     ActionDelete,
@@ -15,9 +16,16 @@ import {FileBrowser, FileData} from "../filebrowser/filebrowser"
 import {readDir, stat} from "../fs/utils"
 
 
-type VirtualFileBrowserProps = { fs: any, setProgress?: (p: number) => Promise<void>, getBuildTags?: () => Array<string> };
+type VirtualFileBrowserProps = {
+    fs: any,
+    setProgress?: (p: number) => Promise<void>,
+    getBuildTags?: () => Array<string>,
+    getRunArgs?: () => Array<string>,
+    getRunEnv?: () => { [key: string]: string },
+    openWindows: Array<React.ReactNode>
+}
 
-type VirtualFileBrowserState = { cwd: string, files: Array<FileData> };
+type VirtualFileBrowserState = { cwd: string, files: Array<FileData> }
 
 export class VirtualFileBrowser extends React.Component<VirtualFileBrowserProps, VirtualFileBrowserState> {
     constructor(props: VirtualFileBrowserProps, context: any) {
@@ -74,16 +82,24 @@ export class VirtualFileBrowser extends React.Component<VirtualFileBrowserProps,
         }
     }
 
-    chdirCheckedRel = async (newCwdName: string): Promise<void> => {
-        await this.chdirChecked(this.state.cwd + newCwdName)
-    }
-
     onOpenFile = async (f: FileData): Promise<boolean> => {
+        let fullPath = this.state.cwd + f.name;
         if (f.numChildren >= 0) { // DIRECTORY: enter
-            await this.chdirCheckedRel(f.name)
+            await this.chdirChecked(fullPath)
             return true
-        } else { // FILE: open for editing (if small enough and text)
-            // TODO
+        } else { // FILE: open for editing
+            let fStat = await stat(this.props.fs, fullPath);
+            if (!(fStat.isFile() && fStat.size < 1024 * 1024)) {
+                return // (if small enough)
+            }
+            let refToRemove
+            refToRemove = <CodeEditorWindow fs={this.props.fs} path={fullPath} onClose={async () => {
+                this.setState((prevState) => {
+                    this.props.openWindows.splice(this.props.openWindows.indexOf(refToRemove), 1)
+                    return prevState
+                })
+            }}/>
+            this.props.openWindows.push(refToRemove)
             return false
         }
     }

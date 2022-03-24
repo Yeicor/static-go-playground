@@ -51,6 +51,10 @@
 
 .settings-options {
     display: flex;
+    flex-wrap: wrap;
+}
+
+.settings-options-first {
     margin-top: 10px;
 }
 
@@ -62,6 +66,10 @@
     -webkit-line-clamp: 1; /* number of lines to show */
     line-clamp: 1;
     -webkit-box-orient: vertical;
+}
+
+.settings-options > input {
+    min-width: 10px;
 }
 
 .spinning {

@@ -30,9 +30,9 @@
     "lodash": "^4.17.21",
     "pretty-bytes": "^6.0.0",
     "react": ">=16",
+    "react-ace": "^9.5.0",
     "react-dom": "^17.0.1",
-    "react-power-tooltip": "^1.0.2",
-    "tooltip": "^1.6.1",
+    "react-draggable": "^4.4.4",
     "virtualfs": "^2.2.0"
   },
   "devDependencies": {

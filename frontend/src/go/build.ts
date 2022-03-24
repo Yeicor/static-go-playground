@@ -12,12 +12,12 @@ export const CmdGoToolsPath = GOROOT + "pkg/tool/js_wasm" // compile & link
 const parsedWasmExecJs = Function("global", wasmExecJsCode as string)
 
 export const defaultGoEnv = {
-    "GOROOT": "/usr/lib/go",
+    "GOROOT": "/usr/lib/go"
     // "GOPATH": "/doesNotExist"
 }
 
 export const goRun = async (fs: any, fsUrl: string, argv: string[] = [], cwd = "/", env: { [key: string]: string } = defaultGoEnv) => {
-    let cssLog = "background: #222; color: #bada55";
+    let cssLog = "background: #222; color: #bada55"
     console.log("%c>>>>> runGoExe:", cssLog, fsUrl, argv, {cwd}, env)
     fs.chdir(cwd)
     // HACK: Dynamically prepare wasm_exec.js each time with the given filesystem
@@ -48,7 +48,7 @@ export const goRun = async (fs: any, fsUrl: string, argv: string[] = [], cwd = "
 
 const performBuildInternal = async (fs: any, commands: string[][], cwd: string,
                                     buildEnv: { [p: string]: string } = defaultGoEnv, progress?: (p: number) => Promise<any>) => {
-    let numCommands = commands.length;
+    let numCommands = commands.length
     for (let i = 0; i < numCommands; i++) {
         let commandParts = commands[i]
         // Add full path to go installation for tool command (works for compile and link)
@@ -75,12 +75,12 @@ export const goBuild = async (fs: any, sourcePath: string, outputExePath: string
     await fs.mkdir(buildFilesTmpDir)
     // Generate the configuration files and commands
     let buildEnv = {...defaultGoEnv, "GOOS": goos, "GOARCH": goarch, ...envOverrides}
-    let buildTagsStr = buildTags.join(",");
-    let sourceStat = await stat(fs, sourcePath);
+    let buildTagsStr = buildTags.join(",")
+    let sourceStat = await stat(fs, sourcePath)
     if (sourceStat.isFile()) {
-        let splitAt = sourcePath.lastIndexOf("/");
-        let sourceParentDir = sourcePath.substring(0, splitAt);
-        let sourceRelPath = sourcePath.substring(splitAt + 1);
+        let splitAt = sourcePath.lastIndexOf("/")
+        let sourceParentDir = sourcePath.substring(0, splitAt)
+        let sourceRelPath = sourcePath.substring(splitAt + 1)
         await goRun(fs, CmdBuildHelperPath, [sourceRelPath, buildFilesTmpDir, buildTagsStr], sourceParentDir, buildEnv)
     } else if (sourceStat.isDirectory()) {
         await goRun(fs, CmdBuildHelperPath, [".", buildFilesTmpDir, buildTagsStr], sourcePath, buildEnv)

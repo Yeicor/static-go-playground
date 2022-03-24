@@ -182,8 +182,8 @@ export const exportZip = async (fs: any, paths: [string], progress?: (p: number)
     }
     let numFiles = 0 // First count files (should be very fast) to report progress (while generating directories)
     for (let path of paths) {
-        await findRecursive(fs, path, async (path1, stat, _enter) => {
-            if (stat.isDirectory()) {
+        await findRecursive(fs, path, async (path1, stat1, _enter) => {
+            if (stat1.isDirectory()) {
                 exportedZip.file(getSubPath(path1, path), null, {dir: true})
                 return true
             }
@@ -195,8 +195,8 @@ export const exportZip = async (fs: any, paths: [string], progress?: (p: number)
     for (let path of paths) {
         await readRecursive(fs, path, async (childPath, isDir, contents) => {
             if (isDir) return true // Already created
-            let subPath = getSubPath(childPath, path);
-            if (subPath == "") { // Exporting only a single file, fix the name
+            let subPath = getSubPath(childPath, path)
+            if (subPath === "") { // Exporting only a single file, fix the name
                 subPath = path.substring(path.lastIndexOf("/") + 1)
             }
             exportedZip.file(subPath, contents, {dir: false})

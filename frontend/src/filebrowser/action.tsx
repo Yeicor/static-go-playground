@@ -233,39 +233,39 @@ export class ActionDownloadZip extends Action<{ fb: VirtualFileBrowser, folderOr
 
     onClick = async () => {
         let bytes = await exportZip(this.props.fb.props.fs, [this.props.folderOrFilePath], this.props.fb.props.setProgress)
-        let name = this.props.folderOrFilePath;
+        let name = this.props.folderOrFilePath
         name = name.substring(name.lastIndexOf("/") + 1, name.length) + ".zip"
         this.saveByteArray(name, bytes)
         if (this.props.fb.props.setProgress) await this.props.fb.props.setProgress(-1) // Done
     }
 
     saveByteArray(name: string, bytes: Uint8Array) {
-        const blob = new Blob([bytes], {type: "application/pdf"});
-        const link = document.createElement('a');
-        link.href = window.URL.createObjectURL(blob);
-        link.download = name;
-        link.click();
-    };
+        const blob = new Blob([bytes], {type: "application/pdf"})
+        const link = document.createElement("a")
+        link.href = window.URL.createObjectURL(blob)
+        link.download = name
+        link.click()
+    }
 
 }
 
 export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePath: string, isDir: boolean }, { visible: boolean }> {
     constructor(props: { fb: VirtualFileBrowser; folderOrFilePath: string; isDir: boolean }, context: any) {
-        super(props, context);
+        super(props, context)
         this.state = {visible: false}
         this.setupCheck().then(undefined)
     }
 
     componentDidUpdate(prevProps: Readonly<{ fb: VirtualFileBrowser; folderOrFilePath: string; isDir: boolean }>, prevState: Readonly<{ visible: boolean }>, snapshot?: any) {
-        if(!this.state.visible) this.setupCheck().then(undefined)
+        if (!this.state.visible) this.setupCheck().then(undefined)
     }
 
     setupCheck = async () => {
         if (this.props.isDir) { // Check if any file is main
             for (let fileName of (await readDir(this.props.fb.props.fs, this.props.folderOrFilePath))) {
-                let folderSlash = this.props.folderOrFilePath;
+                let folderSlash = this.props.folderOrFilePath
                 if (!folderSlash.endsWith("/")) {
-                    folderSlash += "/";
+                    folderSlash += "/"
                 }
                 if (await this.setupCheckFile(folderSlash + fileName)) {
                     this.setState((prevState) => ({...prevState, visible: true}))
@@ -286,11 +286,11 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
         if (!filePath.endsWith(".go")) {
             return false
         }
-        let fStat = await stat(this.props.fb.props.fs, filePath);
+        let fStat = await stat(this.props.fb.props.fs, filePath)
         if (!fStat.isFile() || fStat.size > this.maxSourceSize) {
             return false
         }
-        let bytes = await readCache(this.props.fb.props.fs, filePath);
+        let bytes = await readCache(this.props.fb.props.fs, filePath)
         for (let checkRegex of this.checkRegexes) {
             if (!checkRegex.test(bytes.toString())) {
                 return false
@@ -332,25 +332,25 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
 
 export class ActionRun extends Action<{ fb: VirtualFileBrowser, folderOrFilePath: string, isDir: boolean }, { visible: boolean }> {
     constructor(props: { fb: VirtualFileBrowser; folderOrFilePath: string; isDir: boolean }, context: any) {
-        super(props, context);
+        super(props, context)
         this.state = {visible: false}
         setTimeout(() => this.setupCheck().then(undefined), 0)
     }
 
     componentDidUpdate(prevProps: Readonly<{ fb: VirtualFileBrowser; folderOrFilePath: string; isDir: boolean }>, prevState: Readonly<{ visible: boolean }>, snapshot?: any) {
-        if(!this.state.visible) this.setupCheck().then(undefined)
+        if (!this.state.visible) this.setupCheck().then(undefined)
     }
 
     setupCheck = async () => {
         if (this.props.isDir) {
-            let exePath = this.getExePath();
+            let exePath = this.getExePath()
             try {
                 await stat(this.props.fb.props.fs, exePath)
                 this.setState((prevState) => ({...prevState, visible: true}))
             } catch (doesNotExist) {
             }
         } else {
-            if(this.props.folderOrFilePath.endsWith(".out")) {
+            if (this.props.folderOrFilePath.endsWith(".out")) {
                 this.setState((prevState) => ({...prevState, visible: true}))
             }
         }
@@ -370,8 +370,12 @@ export class ActionRun extends Action<{ fb: VirtualFileBrowser, folderOrFilePath
 
     onClick = async () => {
         let fs = this.props.fb.props.fs
-        let exePath = this.getExePath();
-        await goRun(fs, exePath, [], this.props.fb.state.cwd)
+        let exePath = this.getExePath()
+        let runArgs = []
+        if (this.props.fb.props.getRunArgs) runArgs = this.props.fb.props.getRunArgs()
+        let runEnv = {}
+        if (this.props.fb.props.getRunEnv) runEnv = this.props.fb.props.getRunEnv()
+        await goRun(fs, exePath, runArgs, this.props.fb.state.cwd, runEnv)
     }
 
     private getExePath(): string {
@@ -379,6 +383,6 @@ export class ActionRun extends Action<{ fb: VirtualFileBrowser, folderOrFilePath
         if (this.props.isDir) {
             exePath = this.props.folderOrFilePath + "/a.out"
         }
-        return exePath;
+        return exePath
     }
 }
