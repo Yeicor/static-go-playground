@@ -27,7 +27,7 @@ export class Settings extends React.Component<{}, SettingsState> {
         this.state = {
             loadingProgress: 0.0,
             open: true,
-            fs: openVirtualFS("memory", "default"), // TODO: Let the user choose (GET params?)
+            fs: openVirtualFS("memory", "default"), // TODO: Implement more & let the user choose
             buildTags: "example,js,wasm",
             runArgs: "arg1 \"arg2 with spaces\"",
             runEnv: "VAR=VALUE,VAR2=VALUE2",
@@ -53,7 +53,7 @@ export class Settings extends React.Component<{}, SettingsState> {
         return <div id={"sgp-settings"} className={"tooltip"}>
             {this.renderSettingsTrigger(this.state.loadingProgress)}
             {this.renderSettings()}
-            {this.state.windows.map(e => <span key={e.toString()}>{e}</span>)}
+            {this.state.windows.map(e => <span>{e}</span>)}
         </div>
     }
 
@@ -73,7 +73,17 @@ export class Settings extends React.Component<{}, SettingsState> {
                                 getRunArgs={() => commandArgs2Array(this.state.runArgs)}
                                 getRunEnv={() => Object.assign({}, ...this.state.runEnv.split(",")
                                     .map((el) => ({[el.split("=")[0]]: el.split("=")[1]})))}
-                                openWindows={this.state.windows}/>
+                                setOpenWindows={(mapper) => {
+                                    return new Promise((resolve) => {
+                                        this.setState((prevState) => ({
+                                            ...prevState,
+                                            windows: mapper(prevState.windows)
+                                        }), async () => {
+                                            await this.vfsBrowser.current.refreshFilesCwd()
+                                            resolve(0)
+                                        })
+                                    })
+                                }}/>
             <div className={"settings-options settings-options-first"}>
                 <label htmlFor={"build-tags"}>Build tags: </label>
                 <input id={"build-tags"} type={"text"} value={this.state.buildTags} onChange={(ev) =>

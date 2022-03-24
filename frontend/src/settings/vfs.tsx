@@ -22,7 +22,7 @@ type VirtualFileBrowserProps = {
     getBuildTags?: () => Array<string>,
     getRunArgs?: () => Array<string>,
     getRunEnv?: () => { [key: string]: string },
-    openWindows: Array<React.ReactNode>
+    setOpenWindows?: (mapper: (prevWindows: Array<React.ReactNode>) => Array<React.ReactNode>) => Promise<any>,
 }
 
 type VirtualFileBrowserState = { cwd: string, files: Array<FileData> }
@@ -94,12 +94,15 @@ export class VirtualFileBrowser extends React.Component<VirtualFileBrowserProps,
             }
             let refToRemove
             refToRemove = <CodeEditorWindow fs={this.props.fs} path={fullPath} onClose={async () => {
-                this.setState((prevState) => {
-                    this.props.openWindows.splice(this.props.openWindows.indexOf(refToRemove), 1)
-                    return prevState
+                await this.props.setOpenWindows(prev => {
+                    prev.splice(prev.indexOf(refToRemove), 1)
+                    return prev
                 })
-            }}/>
-            this.props.openWindows.push(refToRemove)
+            }} key={fullPath}/>
+            await this.props.setOpenWindows(prev => {
+                prev.push(refToRemove)
+                return prev
+            })
             return false
         }
     }

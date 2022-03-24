@@ -16,7 +16,7 @@ export const openVirtualFS = (backend: "memory" | "localStorage", id: string): a
             virtualFSRuntimeInfo[id] = fs
             return fs
         default:
-            throw "openVirtualFS: storage backend '" + backend + "' not yet implemented" // TODO
+            throw "openVirtualFS: storage backend '" + backend + "' not yet implemented"
     }
 }
 

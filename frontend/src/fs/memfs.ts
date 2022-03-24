@@ -91,7 +91,7 @@ export const openVirtualFSMemory = () => {
     myMemoryFS.writeSyncOriginal2 = myMemoryFS.writeSync
     myMemoryFS.writeSync = function (fd, buf, offset, length, position, callback) {
         if (fd === 1 || fd === 2) {
-            // TODO: Custom console listener (also handling stdin!)
+            // TODO: Custom console listener (and also handle stdin!)
             if (offset !== 0 || length !== buf.length || position !== null) {
                 if (callback) callback(enosys())
                 return -1

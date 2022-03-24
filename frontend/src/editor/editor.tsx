@@ -22,7 +22,7 @@ export class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState
     forceUpdateCode = async () => {
         let uint8Array = await readCache(this.props.fs, this.props.path)
         let contents = textDecoder.decode(uint8Array)
-        this.setState((prevState) => ({...prevState, code: contents}))
+        this.setState((prevState) => ({...prevState, code: contents, working: false}))
     }
 
     onChange = async (newContents: string) => {
@@ -40,7 +40,9 @@ export class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState
             mode={this.props.path.endsWith(".go") ? "golang" : "text"}
             theme="github"
             onChange={this.onChange}
+            value={this.state.code}
             name={this.state.editorID}
+            style={{"height": "calc(100% - 27px)", "width": "100%", "marginTop": "-10px"}}
         />
     }
 }

@@ -17,11 +17,16 @@
     cursor: auto;
 }
 
+.window {
+    width: 600px;
+    height: 400px;
+    background: red;
+}
+
 .window-top-bar {
     display: flex;
-    flex: 1;
 }
 
 .window-top-bar-fill {
-    flex: 10000;
+    flex-grow: 10000;
 }
