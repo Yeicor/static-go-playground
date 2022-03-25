@@ -59,7 +59,6 @@
 }
 
 .settings-options > label {
-    flex: 10000;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
@@ -69,7 +68,9 @@
 }
 
 .settings-options > input {
-    min-width: 10px;
+    flex: 10000;
+    min-width: 100px;
+    margin-left: 10px;
 }
 
 .spinning {

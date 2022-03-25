@@ -1,16 +1,16 @@
-import {CodeEditor, CodeEditorProps} from "./editor";
-import React from "react";
+import {faClose} from "@fortawesome/free-solid-svg-icons"
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome"
+import React from "react"
+import Draggable from "react-draggable"
+import {CodeEditor, CodeEditorProps} from "./editor"
 import "./window.css"
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import Draggable from "react-draggable";
-import {faClose} from "@fortawesome/free-solid-svg-icons";
 
-export type CodeEditorWindowProps = CodeEditorProps & { onClose?: () => Promise<any> };
+export type CodeEditorWindowProps = CodeEditorProps & { onClose?: () => Promise<any> }
 
 export class CodeEditorWindow extends React.Component<CodeEditorWindowProps, {}> {
 
     constructor(props: CodeEditorWindowProps, context: any) {
-        super(props, context);
+        super(props, context)
     }
 
     render() {

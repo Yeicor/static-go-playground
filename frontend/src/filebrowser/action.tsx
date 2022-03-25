@@ -13,7 +13,8 @@ import {
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome"
 import React from "react"
 import {deleteRecursive, exportZip, fsAsync, importZip, readCache, readDir, stat} from "../fs/utils"
-import {goBuild, goRun} from "../go/build"
+import {goBuild} from "../go/build"
+import {goRun} from "../go/run"
 import {VirtualFileBrowser} from "../settings/vfs"
 
 /**
@@ -375,7 +376,7 @@ export class ActionRun extends Action<{ fb: VirtualFileBrowser, folderOrFilePath
         if (this.props.fb.props.getRunArgs) runArgs = this.props.fb.props.getRunArgs()
         let runEnv = {}
         if (this.props.fb.props.getRunEnv) runEnv = this.props.fb.props.getRunEnv()
-        await goRun(fs, exePath, runArgs, this.props.fb.state.cwd, runEnv)
+        await goRun(fs, exePath, runArgs, this.props.fb.state.cwd, runEnv)[0]
     }
 
     private getExePath(): string {

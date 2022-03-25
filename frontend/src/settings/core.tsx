@@ -3,7 +3,8 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome"
 import ProgressBar from "@ramonak/react-progress-bar"
 import React from "react"
 import {openVirtualFS} from "../fs/fs"
-import {CmdGoPath, goRun} from "../go/build"
+import {CmdGoPath} from "../go/build"
+import {goRun} from "../go/run"
 import {setUpGoInstall} from "../go/setup"
 import "./core.css"
 import {VirtualFileBrowser} from "./vfs"
@@ -15,7 +16,7 @@ type SettingsState = {
     buildTags: string, // Comma-separated build tags
     runArgs: string, // Shell run arguments
     runEnv: string, // Comma-separated run environment (= separated key and value)
-    windows: Array<React.ReactNode>, // reference to code editor windows currently open
+    windows: Array<React.ReactNode> // reference to code editor windows currently open
 }
 
 export class Settings extends React.Component<{}, SettingsState> {
@@ -41,7 +42,7 @@ export class Settings extends React.Component<{}, SettingsState> {
         // Set up root filesystem (go installation), while reporting progress
         await setUpGoInstall(this.state.fs, this.setProgress)
         await this.vfsBrowser.current.refreshFilesCwd() // Refresh the newly added files
-        await goRun(this.state.fs, CmdGoPath, ["version"])
+        await goRun(this.state.fs, CmdGoPath, ["version"])[0]
         await this.setProgress(-1) // Loading finished!
     }
 
@@ -53,7 +54,7 @@ export class Settings extends React.Component<{}, SettingsState> {
         return <div id={"sgp-settings"} className={"tooltip"}>
             {this.renderSettingsTrigger(this.state.loadingProgress)}
             {this.renderSettings()}
-            {this.state.windows.map(e => <span>{e}</span>)}
+            {this.state.windows.map(e => <span key={performance.now()}>{e}</span>)}
         </div>
     }
 
@@ -99,29 +100,30 @@ export class Settings extends React.Component<{}, SettingsState> {
                 <input id={"run-env"} type={"text"} value={this.state.runEnv} onChange={(ev) =>
                     this.setState((prevState) => ({...prevState, runEnv: (ev.target as HTMLInputElement).value}))}/>
             </div>
+            {/* TODO: Running notifier + force stop hack*/}
         </div>
     }
 }
 
 function commandArgs2Array(text: string): Array<string> {
-    const re = /^"[^"]*"$/; // Check if argument is surrounded with double-quotes
-    const re2 = /^([^"]|[^"].*?[^"])$/; // Check if argument is NOT surrounded with double-quotes
+    const re = /^"[^"]*"$/ // Check if argument is surrounded with double-quotes
+    const re2 = /^([^"]|[^"].*?[^"])$/ // Check if argument is NOT surrounded with double-quotes
 
-    let arr = [];
-    let argPart = null;
+    let arr = []
+    let argPart = null
 
     text && text.split(" ").forEach(function (arg) {
         if ((re.test(arg) || re2.test(arg)) && !argPart) {
-            arr.push(arg);
+            arr.push(arg)
         } else {
-            argPart = argPart ? argPart + " " + arg : arg;
+            argPart = argPart ? argPart + " " + arg : arg
             // If part is complete (ends with a double quote), we can add it to the array
             if (/"$/.test(argPart)) {
-                arr.push(argPart.substring(1, argPart.length - 1));
-                argPart = null;
+                arr.push(argPart.substring(1, argPart.length - 1))
+                argPart = null
             }
         }
-    });
+    })
 
-    return arr;
+    return arr
 }

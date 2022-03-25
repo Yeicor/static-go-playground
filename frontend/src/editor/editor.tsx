@@ -1,5 +1,5 @@
 import React from "react"
-import AceEditor from "react-ace";
+import AceEditor from "react-ace"
 import {readCache, writeCache} from "../fs/utils"
 
 import "ace-builds/src-noconflict/mode-golang"
@@ -26,9 +26,9 @@ export class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState
     }
 
     onChange = async (newContents: string) => {
-        if (this.state.working) return // Ignore updates while loading
+        // if (this.state.working) return // Ignore updates while loading
         this.setState((prevState) => ({...prevState, working: true}), async () => {
-            // Save on every write (in background, after updating the state) FIXME: Data races?
+            // Save on every write (in background, after updating the state)
             let uint8Array = textEncoder.encode(newContents)
             await writeCache(this.props.fs, this.props.path, uint8Array)
             this.setState((prevState) => ({...prevState, code: newContents, working: false}))

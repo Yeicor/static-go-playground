@@ -17,7 +17,7 @@ frontend-prod: # Build the frontend
 static: wasm-exec # Prepare and copy other static files for the website (not handled by frontend builder)
 
 wasm-exec: # Copy the original wasm_exec.js (with minimal fixes for bundling) from the compiled distribution
-	sed -E 's/require\(/global.require\(/g; s/([^.])process/\1global.process/g; s/([^.])fs([\w.])/\1global.fs\2/g' \
+	sed -E 's/require\(/global.require\(/g; s/([^.])process/\1global.process/g; s/([^.])fs([\w.])/\1global.fs\2/g; s/\(code\) => \{/(code) => {this.exit_code=code;/' \
 		"${GOROOT}/misc/wasm/wasm_exec.js" >"frontend/src/go/wasm_exec.js.generated"
 
 fs: bootstrap-go-pkg cmd-link # Finalizes the filesystem setup

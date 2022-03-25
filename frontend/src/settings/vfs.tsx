@@ -22,7 +22,7 @@ type VirtualFileBrowserProps = {
     getBuildTags?: () => Array<string>,
     getRunArgs?: () => Array<string>,
     getRunEnv?: () => { [key: string]: string },
-    setOpenWindows?: (mapper: (prevWindows: Array<React.ReactNode>) => Array<React.ReactNode>) => Promise<any>,
+    setOpenWindows?: (mapper: (prevWindows: Array<React.ReactNode>) => Array<React.ReactNode>) => Promise<any>
 }
 
 type VirtualFileBrowserState = { cwd: string, files: Array<FileData> }
@@ -83,12 +83,12 @@ export class VirtualFileBrowser extends React.Component<VirtualFileBrowserProps,
     }
 
     onOpenFile = async (f: FileData): Promise<boolean> => {
-        let fullPath = this.state.cwd + f.name;
+        let fullPath = this.state.cwd + f.name
         if (f.numChildren >= 0) { // DIRECTORY: enter
             await this.chdirChecked(fullPath)
             return true
         } else { // FILE: open for editing
-            let fStat = await stat(this.props.fs, fullPath);
+            let fStat = await stat(this.props.fs, fullPath)
             if (!(fStat.isFile() && fStat.size < 1024 * 1024)) {
                 return // (if small enough)
             }
