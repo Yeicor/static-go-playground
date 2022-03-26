@@ -1,4 +1,4 @@
-import {faGear} from "@fortawesome/free-solid-svg-icons"
+import {faGear, faPlus} from "@fortawesome/free-solid-svg-icons"
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome"
 import ProgressBar from "@ramonak/react-progress-bar"
 import React from "react"
@@ -29,7 +29,7 @@ export class Settings extends React.Component<{}, SettingsState> {
             loadingProgress: 0.0,
             open: true,
             fs: openVirtualFS("memory", "default"), // TODO: Implement more & let the user choose
-            buildTags: "example,js,wasm",
+            buildTags: "example,tag",
             runArgs: "arg1 \"arg2 with spaces\"",
             runEnv: "VAR=VALUE,VAR2=VALUE2",
             windows: []
@@ -69,6 +69,12 @@ export class Settings extends React.Component<{}, SettingsState> {
 
     renderSettings = () => {
         return <div className={"tooltip-content settings-tooltip" + (this.state.open ? " tooltip-visible" : "")}>
+            <div className={"settings-options settings-options-title"}>
+                <h4>Files</h4>
+                <button onClick={() => {
+                    /*TODO*/
+                }}><FontAwesomeIcon icon={faPlus}/></button>
+            </div>
             <VirtualFileBrowser fs={this.state.fs} ref={this.vfsBrowser} setProgress={this.setProgress}
                                 getBuildTags={() => this.state.buildTags.split(",")}
                                 getRunArgs={() => commandArgs2Array(this.state.runArgs)}
@@ -85,10 +91,24 @@ export class Settings extends React.Component<{}, SettingsState> {
                                         })
                                     })
                                 }}/>
-            <div className={"settings-options settings-options-first"}>
+            <div className={"settings-options settings-options-title"}>
+                <h4>Build settings</h4>
+                <button onClick={() => {
+                    /*TODO*/
+                }}><FontAwesomeIcon icon={faPlus}/></button>
+            </div>
+            {/* TODO: Build os/arch */}
+            <div className={"settings-options"}>
                 <label htmlFor={"build-tags"}>Build tags: </label>
                 <input id={"build-tags"} type={"text"} value={this.state.buildTags} onChange={(ev) =>
                     this.setState((prevState) => ({...prevState, buildTags: (ev.target as HTMLInputElement).value}))}/>
+            </div>
+            {/* TODO: Run on build */}
+            <div className={"settings-options settings-options-title"}>
+                <h4>Run settings</h4>
+                <button onClick={() => {
+                    /*TODO*/
+                }}><FontAwesomeIcon icon={faPlus}/></button>
             </div>
             <div className={"settings-options"}>
                 <label htmlFor={"run-args"}>Run args: </label>

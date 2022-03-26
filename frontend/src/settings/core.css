@@ -49,13 +49,17 @@
     overflow: auto;
 }
 
+.settings-tooltip > h4 {
+    margin-bottom: 5px;
+}
+
+.settings-tooltip > h4:first-child {
+    margin-top: 0;
+}
+
 .settings-options {
     display: flex;
     flex-wrap: wrap;
-}
-
-.settings-options-first {
-    margin-top: 10px;
 }
 
 .settings-options > label {
@@ -67,10 +71,26 @@
     -webkit-box-orient: vertical;
 }
 
-.settings-options > input {
-    flex: 10000;
-    min-width: 100px;
+.settings-options > button, .settings-options > input {
     margin-left: 10px;
+}
+
+.settings-options > h4 {
+    flex: 10000;
+    margin: 0;
+}
+
+.settings-options-title {
+    margin: 10px 0 5px 0;
+}
+
+.settings-options-title:first-child {
+    margin: 0 0 5px 0;
+}
+
+.settings-options > input {
+    min-width: 100px;
+    flex: 10000;
 }
 
 .spinning {
