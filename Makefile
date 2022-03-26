@@ -31,7 +31,7 @@ bootstrap-go-pkg: bootstrap-go-pkg-prepare bootstrap-go-pkg-toolchain cmd-go cmd
 
 bootstrap-go-pkg-prepare:
 	mkdir -p "${DIST}/tmp-bootstrap"
-	cp -r "${GOROOT}" "${DIST}/tmp-bootstrap"  # Copy all go source files for the bootstrap (reason: hard-coded directory)
+	cp -r "${GOROOT}/*" "${DIST}/tmp-bootstrap"  # Copy all go source files for the bootstrap (reason: hard-coded directory)
 	find "${DIST}/tmp-bootstrap/" # Debug installation file hierarchy
 	# HACK: Fake RLock for go build to work
 	patch "${DIST}/tmp-bootstrap/go/src/cmd/go/internal/lockedfile/internal/filelock/filelock.go" "patches/filelock.go.patch"
