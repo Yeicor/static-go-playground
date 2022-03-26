@@ -20,7 +20,7 @@ wasm-exec: # Copy the original wasm_exec.js (with minimal fixes for bundling) fr
 	sed -E 's/require\(/global.require\(/g; s/([^.])process/\1global.process/g; s/([^.])fs([\w.])/\1global.fs\2/g; s/\(code\) => \{/(code) => {this.exit_code=code;/' \
 		"${GOROOT}/misc/wasm/wasm_exec.js" >"frontend/src/go/wasm_exec.js.generated"
 
-fs: bootstrap-go-pkg cmd-link # Finalizes the filesystem setup
+fs: bootstrap-go-pkg # Finalizes the filesystem setup
 	mkdir -p "${DIST}/fs/src"  # Sources (and any uploaded files) will be stored here
 
 fs-zip: # Zips the filesystem and remove the original

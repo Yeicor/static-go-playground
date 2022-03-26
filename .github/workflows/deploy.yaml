@@ -8,8 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [ '1.17', '1.13' ]
-    name: Go ${{ matrix.go }} sample
+        go: [ '1.17' ] # TODO: More Go versions
+    name: Build Go ${{ matrix.go }}
     steps:
       - uses: actions/checkout@v2
       - name: Setup go
