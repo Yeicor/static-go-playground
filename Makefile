@@ -27,13 +27,14 @@ fs-zip: # Zips the filesystem and remove the original
 	cd "${DIST}/fs" && zip -${ZIP_COMPRESSION} -r - . >../fs.zip
 	rm -r "${DIST}/fs"
 
+bootstrap-go-pkg: bootstrap-go-pkg-prepare bootstrap-go-pkg-toolchain cmd-go cmd-buildhelper cmd-compile cmd-link bootstrap-go-pkg-cleanup
+
 bootstrap-go-pkg-prepare:
 	mkdir -p "${DIST}/tmp-bootstrap"
 	cp -r "${GOROOT}" "${DIST}/tmp-bootstrap"  # Copy all go source files for the bootstrap (reason: hard-coded directory)
+	find "${DIST}/tmp-bootstrap/" # Debug installation file hierarchy
 	# HACK: Fake RLock for go build to work
 	patch "${DIST}/tmp-bootstrap/go/src/cmd/go/internal/lockedfile/internal/filelock/filelock.go" "patches/filelock.go.patch"
-
-bootstrap-go-pkg: bootstrap-go-pkg-prepare bootstrap-go-pkg-toolchain cmd-go cmd-buildhelper cmd-compile cmd-link bootstrap-go-pkg-cleanup
 
 bootstrap-go-pkg-toolchain: bootstrap-go-pkg-prepare # Bootstrap the go library to the fs to get the pre-cross-compiled executable tools and wasm .a files for the standard library
 	cd "${DIST}/tmp-bootstrap/go/src" && GOROOT_BOOTSTRAP="${GOROOT}" GOOS=js GOARCH=wasm ./bootstrap.bash || true
