@@ -6,6 +6,7 @@ import {openVirtualFS} from "../fs/fs"
 import {CmdGoPath} from "../go/build"
 import {goRun} from "../go/run"
 import {setUpGoInstall} from "../go/setup"
+import {SupportedTargets} from "../go/targets.gen"
 import "./core.css"
 import {VirtualFileBrowser} from "./vfs"
 
@@ -13,6 +14,7 @@ type SettingsState = {
     loadingProgress: number, // If >= 0, it is loading (downloading FS, compiling code, etc.). The maximum is 1.
     open: boolean, // Whether the settings are currently open.
     fs: any, // The current FileSystem
+    buildTarget: string, // OS/arch for build target
     buildTags: string, // Comma-separated build tags
     runArgs: string, // Shell run arguments
     runEnv: string, // Comma-separated run environment (= separated key and value)
@@ -29,6 +31,7 @@ export class Settings extends React.Component<{}, SettingsState> {
             loadingProgress: 0.0,
             open: true,
             fs: openVirtualFS("memory", "default"), // TODO: Implement more & let the user choose
+            buildTarget: "js/wasm",
             buildTags: "example,tag",
             runArgs: "arg1 \"arg2 with spaces\"",
             runEnv: "VAR=VALUE,VAR2=VALUE2",
@@ -42,7 +45,7 @@ export class Settings extends React.Component<{}, SettingsState> {
         // Set up root filesystem (go installation), while reporting progress
         await setUpGoInstall(this.state.fs, this.setProgress)
         await this.vfsBrowser.current.refreshFilesCwd() // Refresh the newly added files
-        await goRun(this.state.fs, CmdGoPath, ["version"])[0]
+        await goRun(this.state.fs, CmdGoPath, ["version"]).runPromise
         await this.setProgress(-1) // Loading finished!
     }
 
@@ -76,32 +79,38 @@ export class Settings extends React.Component<{}, SettingsState> {
                 }}><FontAwesomeIcon icon={faPlus}/></button>
             </div>
             <VirtualFileBrowser fs={this.state.fs} ref={this.vfsBrowser} setProgress={this.setProgress}
+                                getBuildTarget={() => this.state.buildTarget.split("/") as any}
                                 getBuildTags={() => this.state.buildTags.split(",")}
                                 getRunArgs={() => commandArgs2Array(this.state.runArgs)}
                                 getRunEnv={() => Object.assign({}, ...this.state.runEnv.split(",")
                                     .map((el) => ({[el.split("=")[0]]: el.split("=")[1]})))}
-                                setOpenWindows={(mapper) => {
-                                    return new Promise((resolve) => {
-                                        this.setState((prevState) => ({
-                                            ...prevState,
-                                            windows: mapper(prevState.windows)
-                                        }), async () => {
-                                            await this.vfsBrowser.current.refreshFilesCwd()
-                                            resolve(0)
-                                        })
-                                    })
-                                }}/>
+                                setOpenWindows={(mapper) => new Promise((resolve) => this.setState(
+                                    (prevState) => ({...prevState, windows: mapper(prevState.windows)}),
+                                    async () => {
+                                        await this.vfsBrowser.current.refreshFilesCwd()
+                                        resolve(0)
+                                    }))}/>
             <div className={"settings-options settings-options-title"}>
                 <h4>Build settings</h4>
                 <button onClick={() => {
                     /*TODO*/
                 }}><FontAwesomeIcon icon={faPlus}/></button>
             </div>
-            {/* TODO: Build os/arch */}
+            <div className={"settings-options"}>
+                <label htmlFor={"target-arch"}>Target OS/arch: </label>
+                <select value={this.state.buildTarget}
+                        onChange={(ev) => this.setState((prevState) =>
+                            ({...prevState, buildTarget: ev.target.value}))}
+                        title={"Cross-compilation! may require downloading precompiled files (not implemented)"}>
+                    {SupportedTargets.map((t) =>
+                        <option key={t} value={t} disabled={t !== "js/wasm" && t !== "linux/amd64"}>{t}</option>)}
+                </select>
+            </div>
             <div className={"settings-options"}>
                 <label htmlFor={"build-tags"}>Build tags: </label>
                 <input id={"build-tags"} type={"text"} value={this.state.buildTags} onChange={(ev) =>
-                    this.setState((prevState) => ({...prevState, buildTags: (ev.target as HTMLInputElement).value}))}/>
+                    this.setState((prevState) => ({...prevState, buildTags: ev.target.value}))}
+                       title={"Comma-separated build-tags to select included files in compilation"}/>
             </div>
             {/* TODO: Run on build */}
             <div className={"settings-options settings-options-title"}>
@@ -113,12 +122,14 @@ export class Settings extends React.Component<{}, SettingsState> {
             <div className={"settings-options"}>
                 <label htmlFor={"run-args"}>Run args: </label>
                 <input id={"run-args"} type={"text"} value={this.state.runArgs} onChange={(ev) =>
-                    this.setState((prevState) => ({...prevState, runArgs: (ev.target as HTMLInputElement).value}))}/>
+                    this.setState((prevState) => ({...prevState, runArgs: (ev.target as HTMLInputElement).value}))}
+                       title={"Command line arguments (bash-like interpretation)"}/>
             </div>
             <div className={"settings-options"}>
                 <label htmlFor={"run-env"}>Run env: </label>
                 <input id={"run-env"} type={"text"} value={this.state.runEnv} onChange={(ev) =>
-                    this.setState((prevState) => ({...prevState, runEnv: (ev.target as HTMLInputElement).value}))}/>
+                    this.setState((prevState) => ({...prevState, runEnv: (ev.target as HTMLInputElement).value}))}
+                       title={"Comma-separated environment variables, containing key and value separated by equals"}/>
             </div>
             {/* TODO: Running notifier + force stop hack*/}
         </div>
@@ -132,7 +143,7 @@ function commandArgs2Array(text: string): Array<string> {
     let arr = []
     let argPart = null
 
-    text && text.split(" ").forEach(function (arg) {
+    text.split(" ").forEach(function (arg) {
         if ((re.test(arg) || re2.test(arg)) && !argPart) {
             arr.push(arg)
         } else {

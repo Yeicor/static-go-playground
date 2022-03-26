@@ -3,7 +3,7 @@ import {CodeEditorWindow} from "../editor/window"
 import {
     ActionBuild,
     ActionDelete,
-    ActionDownloadZip,
+    ActionDownload,
     ActionFolderUploadZip,
     ActionRename,
     ActionRun,
@@ -19,6 +19,7 @@ import {readDir, stat} from "../fs/utils"
 type VirtualFileBrowserProps = {
     fs: any,
     setProgress?: (p: number) => Promise<void>,
+    getBuildTarget?: () => [string /*OS*/, string /*ARCH*/],
     getBuildTags?: () => Array<string>,
     getRunArgs?: () => Array<string>,
     getRunEnv?: () => { [key: string]: string },
@@ -60,7 +61,7 @@ export class VirtualFileBrowser extends React.Component<VirtualFileBrowserProps,
                     <ActionDelete fb={this} folderOrFilePath={filePath} key={"delete"}/>,
                     <ActionBuild fb={this} folderOrFilePath={filePath} isDir={fileStat.isDirectory()} key={"build"}/>,
                     <ActionRun fb={this} folderOrFilePath={filePath} isDir={fileStat.isDirectory()} key={"run"}/>,
-                    <ActionDownloadZip fb={this} folderOrFilePath={filePath} key={"download-zip"}/>
+                    <ActionDownload fb={this} folderOrFilePath={filePath} key={"download-zip"}/>
                 ]
             }
             if (fileStat.isDirectory()) {

@@ -1,6 +1,6 @@
 // Compiling once mitigates performance problems of Function
 // @ts-ignore
-import wasmExecJsCode from "bundle-text:./wasm_exec.js.generated"
+import wasmExecJsCode from "bundle-text:./wasm_exec.js.gen"
 import {readCache} from "../fs/utils"
 import {getProcessForFS} from "./process"
 
@@ -10,9 +10,9 @@ export const defaultGoEnv = {
     // "GOPATH": "/doesNotExist"
 }
 export const goRun = (fs: any, fsUrl: string, argv: string[] = [], cwd = "/", env: { [key: string]: string } = defaultGoEnv):
-    { runPromise: () => Promise<number>; forceStop: () => Promise<void> } => {
+    { runPromise: Promise<number>; forceStop: () => Promise<void> } => {
     return {
-        runPromise: async (): Promise<number> => {
+        runPromise: ((async (): Promise<number> => {
             let cssLog = "background: #222; color: #bada55"
             console.log("%c>>>>> runGoExe:", cssLog, fsUrl, argv, {cwd}, env)
             fs.chdir(cwd)
@@ -41,7 +41,7 @@ export const goRun = (fs: any, fsUrl: string, argv: string[] = [], cwd = "/", en
             go.env = env
             await go.run(tmp.instance)
             return go.exit_code
-        },
+        })()),
         forceStop: async () => {
             // TODO: Use injected code from build process
         }

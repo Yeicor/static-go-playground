@@ -14,7 +14,7 @@ const performBuildInternal = async (fs: any, commands: string[][], cwd: string,
         let commandParts = commands[i]
         // Add full path to go installation for tool command (works for compile and link)
         commandParts[0] = CmdGoToolsPath + "/" + commandParts[0]
-        await goRun(fs, commandParts[0], commandParts.slice(1), cwd, buildEnv)[0]
+        await goRun(fs, commandParts[0], commandParts.slice(1), cwd, buildEnv).runPromise
         if (progress) await progress(goBuildParsingProgress + (1 - goBuildParsingProgress) * (i + 1) / numCommands)
     }
 }
@@ -42,9 +42,9 @@ export const goBuild = async (fs: any, sourcePath: string, outputExePath: string
         let splitAt = sourcePath.lastIndexOf("/")
         let sourceParentDir = sourcePath.substring(0, splitAt)
         let sourceRelPath = sourcePath.substring(splitAt + 1)
-        await goRun(fs, CmdBuildHelperPath, [sourceRelPath, buildFilesTmpDir, buildTagsStr], sourceParentDir, buildEnv)[0]
+        await goRun(fs, CmdBuildHelperPath, [sourceRelPath, buildFilesTmpDir, buildTagsStr], sourceParentDir, buildEnv).runPromise
     } else if (sourceStat.isDirectory()) {
-        await goRun(fs, CmdBuildHelperPath, [".", buildFilesTmpDir, buildTagsStr], sourcePath, buildEnv)[0]
+        await goRun(fs, CmdBuildHelperPath, [".", buildFilesTmpDir, buildTagsStr], sourcePath, buildEnv).runPromise
     } else {
         console.error("Unsupported go build target", sourceStat)
         return

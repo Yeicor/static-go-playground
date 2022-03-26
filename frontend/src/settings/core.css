@@ -71,7 +71,7 @@
     -webkit-box-orient: vertical;
 }
 
-.settings-options > button, .settings-options > input {
+.settings-options > button, .settings-options > input, .settings-options > select {
     margin-left: 10px;
 }
 
@@ -88,7 +88,7 @@
     margin: 0 0 5px 0;
 }
 
-.settings-options > input {
+.settings-options > input, .settings-options > select {
     min-width: 100px;
     flex: 10000;
 }

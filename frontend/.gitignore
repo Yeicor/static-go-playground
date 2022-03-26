@@ -2,4 +2,5 @@
 /dist
 /.parcel-cache
 /yarn-error.log
-/src/go/wasm_exec.js.generated
+/src/go/wasm_exec.js.gen
+/src/go/targets.gen.js

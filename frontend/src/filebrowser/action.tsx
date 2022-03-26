@@ -223,19 +223,26 @@ export class ActionFolderUploadZip extends Action<{ fb: VirtualFileBrowser, fold
     }
 }
 
-export class ActionDownloadZip extends Action<{ fb: VirtualFileBrowser, folderOrFilePath: string }, {}> {
+export class ActionDownload extends Action<{ fb: VirtualFileBrowser, folderOrFilePath: string }, {}> {
     getIcon = () => {
         return faDownload
     }
 
     tooltip = () => {
-        return "Download a zip file containing this file/folder"
+        return "Download a zip file containing this folder or the selected file directly"
     }
 
     onClick = async () => {
-        let bytes = await exportZip(this.props.fb.props.fs, [this.props.folderOrFilePath], this.props.fb.props.setProgress)
         let name = this.props.folderOrFilePath
-        name = name.substring(name.lastIndexOf("/") + 1, name.length) + ".zip"
+        let bytes: Uint8Array
+        let fStat = await stat(this.props.fb.props.fs, this.props.folderOrFilePath)
+        if (fStat.isFile()) {
+            name = name.substring(name.lastIndexOf("/") + 1)
+            bytes = await readCache(this.props.fb.props.fs, this.props.folderOrFilePath)
+        } else {
+            name = name.substring(name.lastIndexOf("/") + 1, name.length) + ".zip"
+            bytes = await exportZip(this.props.fb.props.fs, [this.props.folderOrFilePath], this.props.fb.props.setProgress)
+        }
         this.saveByteArray(name, bytes)
         if (this.props.fb.props.setProgress) await this.props.fb.props.setProgress(-1) // Done
     }
@@ -325,7 +332,9 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
         outFile += "a.out"
         let buildTags = []
         if (this.props.fb.props.getBuildTags) buildTags = this.props.fb.props.getBuildTags()
-        await goBuild(fs, buildFile, outFile, buildTags, "js", "wasm", {}, this.props.fb.props.setProgress)
+        let buildTarget = ["js", "wasm"]
+        if (this.props.fb.props.getBuildTarget) buildTarget = this.props.fb.props.getBuildTarget()
+        await goBuild(fs, buildFile, outFile, buildTags, buildTarget[0], buildTarget[1], {}, this.props.fb.props.setProgress)
         await this.props.fb.refreshFilesCwd()
         if (this.props.fb.props.setProgress) await this.props.fb.props.setProgress(-1) // Done
     }
@@ -376,7 +385,7 @@ export class ActionRun extends Action<{ fb: VirtualFileBrowser, folderOrFilePath
         if (this.props.fb.props.getRunArgs) runArgs = this.props.fb.props.getRunArgs()
         let runEnv = {}
         if (this.props.fb.props.getRunEnv) runEnv = this.props.fb.props.getRunEnv()
-        await goRun(fs, exePath, runArgs, this.props.fb.state.cwd, runEnv)[0]
+        await goRun(fs, exePath, runArgs, this.props.fb.state.cwd, runEnv).runPromise
     }
 
     private getExePath(): string {

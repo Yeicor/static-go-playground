@@ -12,11 +12,21 @@ jobs:
     name: Build Go ${{ matrix.go }}
     steps:
       - uses: actions/checkout@v2
-      - name: Setup go
-        uses: actions/setup-go@v2
+
+      # Setup dependencies
+      - uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go }}
       - uses: actions/setup-node@v2
         with:
           node-version: '16'
-      - run: make
+
+      - name: Build compiler and frontend
+        run: make
+
+      - name: Upload generated artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist
+          retention-days: 30
