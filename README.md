@@ -1,6 +1,7 @@
 # Static Go Playground
 
 <!-- TODO: Tags -->
+[![Build](https://github.com/Yeicor/static-go-playground/actions/workflows/deploy.yaml/badge.svg)](https://github.com/Yeicor/static-go-playground/actions/workflows/deploy.yaml)
 
 ## [TODO: Try it!]
 

@@ -38,7 +38,7 @@ bootstrap-go-pkg-prepare:
 bootstrap-go-pkg-toolchain: bootstrap-go-pkg-prepare # Bootstrap the go library to the fs to get the pre-cross-compiled executable tools and wasm .a files for the standard library
 	cd "${DIST}/tmp-bootstrap/src" && GOROOT_BOOTSTRAP="${GOROOT}" GOOS=js GOARCH=wasm ./bootstrap.bash || true
 	mkdir -p "${DIST}/fs/usr/lib/go"
-	cp -r "${DIST}/tmp-bootstrap/go-js-wasm-bootstrap/pkg" "${DIST}/fs/usr/lib/go" # Copy compiled .a files to fs
+	cp -r "${DIST}/tmp-bootstrap/pkg" "${DIST}/fs/usr/lib/go" # Copy compiled .a files to fs
 
 bootstrap-go-pkg-cleanup: bootstrap-go-pkg-toolchain # Clean up
 	rm -r "${DIST}/tmp-bootstrap"
@@ -49,21 +49,21 @@ bootstrap-go-pkg-cleanup: bootstrap-go-pkg-toolchain # Clean up
 	rm -r "${DIST}/fs/usr/lib/go/pkg/tool/linux_amd64" || true
 
 cmd-go: bootstrap-go-pkg-toolchain # Builds go command (for high level info, not actually needed as go build is replaced)
-	export GOROOT="$(CURDIR)/${DIST}/tmp-bootstrap/go" && \
+	export GOROOT="$(CURDIR)/${DIST}/tmp-bootstrap" && \
 	export BUILD_DIR="$$GOROOT/src/cmd/go/" && \
 	export OUT_DIR="${DIST}/fs/usr/lib/go/bin" && \
 	mkdir -p "$$OUT_DIR" && \
 	cd "$$BUILD_DIR" && GOOS=js GOARCH=wasm $$GOROOT/bin/go build -trimpath -o "$(CURDIR)/$$OUT_DIR/go" -v .
 
 cmd-buildhelper: bootstrap-go-pkg-toolchain # Custom reimplementation of the go build command using only low-level commands
-	export GOROOT="$(CURDIR)/${DIST}/tmp-bootstrap/go" && \
+	export GOROOT="$(CURDIR)/${DIST}/tmp-bootstrap" && \
 	export BUILD_DIR="buildhelper" && \
 	export OUT_DIR="${DIST}/fs/usr/lib/go/bin" && \
 	mkdir -p "$$OUT_DIR" && \
 	cd "$$BUILD_DIR" && GOOS=js GOARCH=wasm $$GOROOT/bin/go build -ldflags="-X 'package_path.variable_name=new_value'" -trimpath -o "$(CURDIR)/$$OUT_DIR/buildhelper" -v .
 
 cmd-compile: bootstrap-go-pkg-toolchain # Builds compile command (for lower level go build)
-	export GOROOT="$(CURDIR)/${DIST}/tmp-bootstrap/go" && \
+	export GOROOT="$(CURDIR)/${DIST}/tmp-bootstrap" && \
 	export goVERSION="$$(go env GOROOT)/bin/go env GOVERSION" && \
 	export BUILD_DIR="$$GOROOT/src/cmd/compile/" && \
 	export OUT_DIR="${DIST}/fs/usr/lib/go/pkg/tool/js_wasm" && \
@@ -72,7 +72,7 @@ cmd-compile: bootstrap-go-pkg-toolchain # Builds compile command (for lower leve
 		-o "$(CURDIR)/$$OUT_DIR/compile" -v . && echo $$goVERSION
 
 cmd-link: bootstrap-go-pkg-toolchain # Builds link command (for lower level go build)
-	export GOROOT="$(CURDIR)/${DIST}/tmp-bootstrap/go" && \
+	export GOROOT="$(CURDIR)/${DIST}/tmp-bootstrap" && \
 	export BUILD_DIR="$$GOROOT/src/cmd/link/" && \
 	export OUT_DIR="${DIST}/fs/usr/lib/go/pkg/tool/js_wasm" && \
 	mkdir -p "$$OUT_DIR" && \
