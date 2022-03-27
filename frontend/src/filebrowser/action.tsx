@@ -336,6 +336,12 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
         if (this.props.fb.props.getBuildTarget) buildTarget = this.props.fb.props.getBuildTarget()
         await goBuild(fs, buildFile, outFile, buildTags, buildTarget[0], buildTarget[1], {}, this.props.fb.props.setProgress)
         await this.props.fb.refreshFilesCwd()
+        // Run after build if configured
+        let runAfterBuild = false
+        if (this.props.fb.props.getBuildRun) runAfterBuild = this.props.fb.props.getBuildRun()
+        if (runAfterBuild) {
+            await new ActionRun({...this.props, folderOrFilePath: outFile, isDir: false}, {}).onClick()
+        }
         if (this.props.fb.props.setProgress) await this.props.fb.props.setProgress(-1) // Done
     }
 }

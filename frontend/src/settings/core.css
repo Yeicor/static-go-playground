@@ -60,6 +60,7 @@
 .settings-options {
     display: flex;
     flex-wrap: wrap;
+    margin: 2px 0;
 }
 
 .settings-options > label {
@@ -73,6 +74,10 @@
 
 .settings-options > button, .settings-options > input, .settings-options > select {
     margin-left: 10px;
+}
+
+.settings-options > input[type=checkbox] {
+    min-width: 20px;
 }
 
 .settings-options > h4 {

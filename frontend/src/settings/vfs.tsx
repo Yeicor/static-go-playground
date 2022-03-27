@@ -21,6 +21,7 @@ type VirtualFileBrowserProps = {
     setProgress?: (p: number) => Promise<void>,
     getBuildTarget?: () => [string /*OS*/, string /*ARCH*/],
     getBuildTags?: () => Array<string>,
+    getBuildRun?: () => boolean,
     getRunArgs?: () => Array<string>,
     getRunEnv?: () => { [key: string]: string },
     setOpenWindows?: (mapper: (prevWindows: Array<React.ReactNode>) => Array<React.ReactNode>) => Promise<any>

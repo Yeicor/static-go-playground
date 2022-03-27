@@ -17,6 +17,7 @@ type SettingsState = {
     fs: any, // The current FileSystem
     buildTarget: string, // OS/arch for build target
     buildTags: string, // Comma-separated build tags
+    buildRun: boolean, // Run after build
     runArgs: string, // Shell run arguments
     runEnv: string, // Comma-separated run environment (= separated key and value)
     windows: Array<React.ReactNode> // reference to code editor windows currently open
@@ -35,6 +36,7 @@ export class Settings extends React.Component<{}, SettingsState> {
             fs: openVirtualFS("memory", "default"), // TODO: Implement more & let the user choose
             buildTarget: "js/wasm",
             buildTags: "example,tag",
+            buildRun: true,
             runArgs: "arg1 \"arg2 with spaces\"",
             runEnv: "VAR=VALUE,VAR2=VALUE2",
             windows: []
@@ -73,7 +75,8 @@ export class Settings extends React.Component<{}, SettingsState> {
     }
 
     renderSettings = () => {
-        return <div className={"tooltip-content settings-tooltip collapsible-parent" + (this.state.open ? " tooltip-visible" : "")}>
+        return <div
+            className={"tooltip-content settings-tooltip collapsible-parent" + (this.state.open ? " tooltip-visible" : "")}>
             <div className={"settings-options settings-options-title"}>
                 <h4>Files</h4>
                 <button onClick={() => this.setState((prevState) => ({
@@ -85,6 +88,7 @@ export class Settings extends React.Component<{}, SettingsState> {
                 <VirtualFileBrowser fs={this.state.fs} ref={this.vfsBrowser} setProgress={this.setProgress}
                                     getBuildTarget={() => this.state.buildTarget.split("/") as any}
                                     getBuildTags={() => this.state.buildTags.split(",")}
+                                    getBuildRun={() => this.state.buildRun}
                                     getRunArgs={() => commandArgs2Array(this.state.runArgs)}
                                     getRunEnv={() => Object.assign({}, ...this.state.runEnv.split(",")
                                         .map((el) => ({[el.split("=")[0]]: el.split("=")[1]})))}
@@ -118,7 +122,13 @@ export class Settings extends React.Component<{}, SettingsState> {
                         this.setState((prevState) => ({...prevState, buildTags: ev.target.value}))}
                            title={"Comma-separated build-tags to select included files in compilation"}/>
                 </div>
-                {/* TODO: Run on build */}
+                <div className={"settings-options"}>
+                    <label htmlFor={"build-run"}>Run after build: </label>
+                    <span style={{"flex": "100000000"}}/>
+                    <input id={"build-run"} type={"checkbox"} checked={this.state.buildRun} onChange={(ev) =>
+                        this.setState((prevState) => ({...prevState, buildRun: ev.target.checked}))}
+                           title={"Automatically try to run built executables after a successful compilation"}/>
+                </div>
             </div>
             <div className={"settings-options settings-options-title"}>
                 <h4>Run settings</h4>
