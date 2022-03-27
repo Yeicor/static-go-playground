@@ -210,3 +210,18 @@ export const exportZip = async (fs: any, paths: [string], progress?: (p: number)
     if (progress) await progress(1)
     return res
 }
+
+export const mkdirs = async (fs: any, buildFilesTmpDir: string) => {
+    let i = 1
+    while (buildFilesTmpDir.substring(i).indexOf("/") >= 0) {
+        i = i + buildFilesTmpDir.substring(i).indexOf("/") + 1
+        try {
+            await fs.mkdir(buildFilesTmpDir.substring(0, i))
+        } catch (alreadyExists) {
+        }
+    }
+    try {
+        await fs.mkdir(buildFilesTmpDir)
+    } catch (alreadyExists) {
+    }
+}

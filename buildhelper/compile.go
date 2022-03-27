@@ -3,13 +3,14 @@ package main
 import (
 	"errors"
 	"go/build"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-func compile(t *parsedTreeNode, buildDir string, buildCtx build.Context) (*os.File, [][]string, []string, error) {
+func compile(t *parsedTreeNode, buildDir string, precompiledInternal bool, buildCtx build.Context) (*os.File, [][]string, []string, error) {
 	importCfg, err := os.OpenFile(filepath.Join(buildDir, "importCfg"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return nil, nil, nil, err
@@ -18,19 +19,21 @@ func compile(t *parsedTreeNode, buildDir string, buildCtx build.Context) (*os.Fi
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	// Add all standard (precompiled) library packs to importCfg
-	//pkgPath := goPkgPath(buildCtx)
-	//err = filepath.Walk(pkgPath, func(path string, info fs.FileInfo, err error) error {
-	//	if strings.HasSuffix(path, ".a") {
-	//		importPath := strings.Replace(path[:len(path)-2], pkgPath+"/", "", 1)
-	//		importPath = strings.Replace(importPath, "\\", "/", -1) // Just in case we are on Windows...
-	//		_, err := importCfg.Write([]byte("packagefile " + importPath + "=" + path + "\n"))
-	//		if err != nil {
-	//			return err
-	//		}
-	//	}
-	//	return nil
-	//})
+	if precompiledInternal {
+		// Add all standard (precompiled) library packs to importCfg
+		pkgPath := goPkgPath(buildCtx)
+		err = filepath.Walk(pkgPath, func(path string, info fs.FileInfo, err error) error {
+			if strings.HasSuffix(path, ".a") {
+				importPath := strings.Replace(path[:len(path)-2], pkgPath+"/", "", 1)
+				importPath = strings.Replace(importPath, "\\", "/", -1) // Just in case we are on Windows...
+				_, err := importCfg.Write([]byte("packagefile " + importPath + "=" + path + "\n"))
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+	}
 	if err != nil {
 		return nil, nil, nil, err
 	}

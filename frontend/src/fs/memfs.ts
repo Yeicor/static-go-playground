@@ -155,7 +155,7 @@ export const openVirtualFSMemory = () => {
     }
 
     // Debug: write all FS calls to console
-    if (process.env.NODE_ENV !== 'production') {
+    if (process.env.NODE_ENV !== "production") {
         /* tslint:disable no-console no-arg */
         // noinspection JSUnusedGlobalSymbols
         const handler = {

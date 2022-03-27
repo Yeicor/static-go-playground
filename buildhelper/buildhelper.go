@@ -26,12 +26,12 @@ func Run(input, buildDir string, buildTags []string) {
 	// Parse import tree (using custom tags)
 	buildCtx := build.Default
 	buildCtx.BuildTags = append(buildCtx.BuildTags, buildTags...)
-	parsedTree, err := parse(input, buildDir, buildCtx)
+	parsedTree, precompiledInternal, err := parse(input, buildDir, buildCtx)
 	if err != nil {
 		log.Fatal(err)
 	}
 	// Generate compile commands
-	importCfg, commands, linkPackages, err := compile(parsedTree, buildDir, buildCtx)
+	importCfg, commands, linkPackages, err := compile(parsedTree, buildDir, precompiledInternal, buildCtx)
 	if err != nil {
 		log.Fatal(err)
 	}

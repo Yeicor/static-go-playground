@@ -1,4 +1,4 @@
-import {readCache, stat} from "../fs/utils"
+import {mkdirs, readCache, stat} from "../fs/utils"
 import {defaultGoEnv, goRun} from "./run"
 
 export const GOROOT = "/usr/lib/go/"
@@ -24,20 +24,15 @@ const performBuildInternal = async (fs: any, commands: string[][], cwd: string,
 }
 
 const goBuildParsingProgress = 0.25
+
 // performBuild will build any source directory with vendored dependencies (go mod vendor), to the given exe
 export const goBuild = async (fs: any, sourcePath: string, outputExePath: string, buildTags: string[] = [],
                               goos = "js", goarch = "wasm", envOverrides: { [key: string]: string } = {},
                               progress?: (p: number) => Promise<any>) => {
     if (progress) await progress(0)
-    let buildFilesTmpDir = "/tmp/build"
-    try {
-        await stat(fs, buildFilesTmpDir)
-        // Do not delete previous intermediary build files (as they may be used as a cache)
-        // await deleteRecursive(fs, buildFilesTmpDir)
-    } catch (doesNotExist) { // Not found, ignore
-        // Automatic mode: using the buildhelper compiled above, which relies on Go's internal build system
-        await fs.mkdir(buildFilesTmpDir)
-    }
+    let buildFilesTmpDir = "/tmp/build/" + goos + "_" + goarch
+    // Do not delete previous intermediary build files (as they may be used as a cache)
+    await mkdirs(fs, buildFilesTmpDir)
     // Generate the configuration files and commands
     let buildEnv = {...defaultGoEnv, "GOOS": goos, "GOARCH": goarch, ...envOverrides}
     let buildTagsStr = buildTags.join(",")

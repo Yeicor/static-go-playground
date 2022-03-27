@@ -23,24 +23,26 @@ type parsedTreeNode struct {
 	imports                     []*parsedTreeNode
 }
 
-func parse(buildDir string, tmpBuildDir string, buildCtx build.Context) (*parsedTreeNode, error) {
+func parse(buildDir string, tmpBuildDir string, buildCtx build.Context) (*parsedTreeNode, bool, error) {
 	// buildCtx.ImportDir() would avoid duplication and handle tags and edge cases, so why not?
 	//  - Because it executes go list, which is available, but requires GOCACHE to be populated.
 	fset := token.NewFileSet()
 	buildDirAbs, err := filepath.Abs(buildDir)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	res, err := parseRecursive(fset, buildDirAbs, "main", buildDirAbs, tmpBuildDir, buildCtx, false, map[string]*parsedTreeNode{})
+	_, err = os.Stat(goPkgPath(buildCtx))
+	precompiledInternal := err == nil // Performance: assume a proper and complete precompiled standard library structure if this directory exists
+	res, err := parseRecursive(fset, buildDirAbs, "main", buildDirAbs, tmpBuildDir, buildCtx, false, precompiledInternal, map[string]*parsedTreeNode{})
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	// Post-process to remove caches if any descendant is not cached
 	invalidateCachesRecursive(res)
-	return res, err
+	return res, precompiledInternal, err
 }
 
-func parseRecursive(fset *token.FileSet, pkgDirOrFile, impPath, buildDir, tmpBuildDir string, buildCtx build.Context, isInternal bool, explored map[string]*parsedTreeNode) (*parsedTreeNode, error) {
+func parseRecursive(fset *token.FileSet, pkgDirOrFile, impPath, buildDir, tmpBuildDir string, buildCtx build.Context, isInternal, precompiledInternal bool, explored map[string]*parsedTreeNode) (*parsedTreeNode, error) {
 	// Also handle files as input for root node (like when there are several examples with func main() on the same directory, but only one is wanted)
 	stat, err := os.Stat(pkgDirOrFile)
 	if err != nil {
@@ -139,11 +141,14 @@ func parseRecursive(fset *token.FileSet, pkgDirOrFile, impPath, buildDir, tmpBui
 			if importDir == "" {
 				return nil, errors.New("Import \"" + importPath + "\" not found in standard locations!")
 			}
+			if precompiledInternal && internal { // Avoid exploration of the precompiled standard library if available (assume OK for performance)
+				continue
+			}
 			if _ /*exploredData*/, alreadyExplored := explored[importDir]; alreadyExplored {
 				// Mark dependency (to properly compile in order), also checking that there are no import cycles!
 				//node.imports = append(node.imports, exploredData)
 			} else {
-				child, err := parseRecursive(fset, importDir, importPath, buildDir, tmpBuildDir, buildCtx, internal, explored)
+				child, err := parseRecursive(fset, importDir, importPath, buildDir, tmpBuildDir, buildCtx, internal, precompiledInternal, explored)
 				if err != nil {
 					return nil, err
 				}

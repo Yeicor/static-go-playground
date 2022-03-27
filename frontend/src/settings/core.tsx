@@ -89,7 +89,7 @@ export class Settings extends React.Component<{}, SettingsState> {
                 <h4>Files</h4>
                 <button onClick={() => this.setState((prevState) => ({
                     ...prevState,
-                    openHeaders: [!prevState.openHeaders[0], ...prevState.openHeaders.slice(-2)],
+                    openHeaders: [!prevState.openHeaders[0], ...prevState.openHeaders.slice(-2)]
                 }))}><FontAwesomeIcon icon={this.state.openHeaders[0] ? faAngleUp : faAngleDown}/></button>
             </div>
             <div className={"collapsible" + (this.state.openHeaders[0] ? " collapsible-expanded" : "")}>
@@ -113,7 +113,7 @@ export class Settings extends React.Component<{}, SettingsState> {
                 <h4>Build settings</h4>
                 <button onClick={() => this.setState((prevState) => ({
                     ...prevState,
-                    openHeaders: [...prevState.openHeaders.slice(0, 1), !prevState.openHeaders[1], ...prevState.openHeaders.slice(-1)],
+                    openHeaders: [...prevState.openHeaders.slice(0, 1), !prevState.openHeaders[1], ...prevState.openHeaders.slice(-1)]
                 }))}><FontAwesomeIcon icon={this.state.openHeaders[1] ? faAngleUp : faAngleDown}/></button>
             </div>
             <div className={"collapsible" + (this.state.openHeaders[1] ? " collapsible-expanded" : "")}>
@@ -152,7 +152,7 @@ export class Settings extends React.Component<{}, SettingsState> {
                 <h4>Run settings</h4>
                 <button onClick={() => this.setState((prevState) => ({
                     ...prevState,
-                    openHeaders: [...prevState.openHeaders.slice(0, 2), !prevState.openHeaders[2]],
+                    openHeaders: [...prevState.openHeaders.slice(0, 2), !prevState.openHeaders[2]]
                 }))}><FontAwesomeIcon icon={this.state.openHeaders[2] ? faAngleUp : faAngleDown}/></button>
             </div>
             <div className={"collapsible" + (this.state.openHeaders[2] ? " collapsible-expanded" : "")}>

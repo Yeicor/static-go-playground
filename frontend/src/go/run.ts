@@ -1,7 +1,7 @@
 // Compiling once mitigates performance problems of Function
+import {BUILD_HACK_STOP_FN_ENV_VAR_NAME} from "../filebrowser/action"
 import {readCache} from "../fs/utils"
 import {getProcessForFS} from "./process"
-import {BUILD_HACK_STOP_FN_ENV_VAR_NAME} from "../filebrowser/action";
 
 // @ts-ignore
 const parsedWasmExecJs = import("bundle-text:./wasm_exec.js.gen").then(wasmExecJsCode => Function("global", wasmExecJsCode as string))
