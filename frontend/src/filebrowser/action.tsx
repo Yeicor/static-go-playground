@@ -12,7 +12,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons"
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome"
 import React from "react"
-import {deleteRecursive, exportZip, fsAsync, importZip, readCache, readDir, stat} from "../fs/utils"
+import {deleteRecursive, exportZip, fsAsync, importZip, readCache, readDir, stat, writeCache} from "../fs/utils"
 import {goBuild} from "../go/build"
 import {goRun} from "../go/run"
 import {VirtualFileBrowser} from "../settings/vfs"
@@ -257,7 +257,11 @@ export class ActionDownload extends Action<{ fb: VirtualFileBrowser, folderOrFil
 
 }
 
+export const BUILD_HACK_STOP_FN_ENV_VAR_NAME = "JS_GLOBAL_STOP_FN"
+
 export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePath: string, isDir: boolean }, { visible: boolean }> {
+    mainGoFile?: string
+
     constructor(props: { fb: VirtualFileBrowser; folderOrFilePath: string; isDir: boolean }, context: any) {
         super(props, context)
         this.state = {visible: false}
@@ -304,6 +308,7 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
                 return false
             }
         }
+        this.mainGoFile = filePath
         return true
     }
 
@@ -334,7 +339,40 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
         if (this.props.fb.props.getBuildTags) buildTags = this.props.fb.props.getBuildTags()
         let buildTarget = ["js", "wasm"]
         if (this.props.fb.props.getBuildTarget) buildTarget = this.props.fb.props.getBuildTarget()
+        let hackedCodePreviousVal: Uint8Array
+        if (this.props.fb.props.getBuildInjectStopCode && this.mainGoFile && this.props.fb.props.getBuildInjectStopCode()) {
+            // HACK: Inject stop code to be able to stop forever-running Go executables.
+            // It spawns an initialization goroutine that sets up a global stop function with a given name that can be called from JS
+            let codeBytes = await readCache(this.props.fb.props.fs, this.mainGoFile);
+            hackedCodePreviousVal = codeBytes;
+            let code = new TextDecoder().decode(codeBytes);
+            let packageMainStart = code.search("package\s+main");
+            let packageMainLength = code.substring(packageMainStart).indexOf("\n") + 2;
+            let packageMainEnd = packageMainStart + packageMainLength;
+            code = code.substring(0, packageMainEnd) + `import (
+                hackFmt23894589 "fmt"
+                hackOs23894589 "os"
+                hackRuntime23894589 "runtime"
+                hackJs23894589 "syscall/js"
+            )` + code.substring(packageMainEnd) + `func init() {
+                if hackRuntime23894589.GOOS == "js" {
+                    jsGlobalStopFnName := hackOs23894589.Getenv("` + BUILD_HACK_STOP_FN_ENV_VAR_NAME + `")
+                    hackFmt23894589.Println("Setting global function to force stop at", jsGlobalStopFnName)
+                    if jsGlobalStopFnName != "" {
+                        hackJs23894589.Global().Set(jsGlobalStopFnName, hackJs23894589.FuncOf(func (this hackJs23894589.Value, args []hackJs23894589.Value) interface{} {
+                            hackOs23894589.Exit(195) // Forces exit: set a custom exit code
+                            return nil
+                        }))
+                    }
+                }
+            }`
+            let codeBytes2 = new TextEncoder().encode(code);
+            await writeCache(this.props.fb.props.fs, this.mainGoFile, codeBytes2);
+        }
         await goBuild(fs, buildFile, outFile, buildTags, buildTarget[0], buildTarget[1], {}, this.props.fb.props.setProgress)
+        if (hackedCodePreviousVal) { // Restore previous code
+            await writeCache(this.props.fb.props.fs, this.mainGoFile, hackedCodePreviousVal);
+        }
         await this.props.fb.refreshFilesCwd()
         // Run after build if configured
         let runAfterBuild = false
@@ -391,7 +429,23 @@ export class ActionRun extends Action<{ fb: VirtualFileBrowser, folderOrFilePath
         if (this.props.fb.props.getRunArgs) runArgs = this.props.fb.props.getRunArgs()
         let runEnv = {}
         if (this.props.fb.props.getRunEnv) runEnv = this.props.fb.props.getRunEnv()
-        let exitCode = await goRun(fs, exePath, runArgs, this.props.fb.state.cwd, runEnv).runPromise
+        let goRunSetup = goRun(fs, exePath, runArgs, this.props.fb.state.cwd, runEnv);
+        if (this.props.fb.props.setRunStopFn) {
+            let prevStopFn = this.props.fb.props.setRunStopFn(goRunSetup.forceStop);
+            if (prevStopFn) {
+                await prevStopFn() // Wait for previous process to stop if pressing run twice
+                // FIXME: Make sure it finished properly (to avoid overwriting the stop function and leaving next run executing)
+                await new Promise(resolve => setTimeout(resolve, 1000))
+                this.props.fb.props.setRunStopFn(goRunSetup.forceStop);
+            }
+        }
+        let exitCode = await goRunSetup.runPromise
+        let prevRunStopFn = this.props.fb.props.setRunStopFn(undefined);
+        if (prevRunStopFn !== goRunSetup.forceStop) {
+            // A new process started while stopping this one, restore the stop function
+            console.warn("Restoring previous STOP fn")
+            this.props.fb.props.setRunStopFn(prevRunStopFn);
+        }
         if (exitCode !== 0) {
             console.error("Run failed, check logs")
         }

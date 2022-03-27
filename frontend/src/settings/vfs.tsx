@@ -22,8 +22,10 @@ type VirtualFileBrowserProps = {
     getBuildTarget?: () => [string /*OS*/, string /*ARCH*/],
     getBuildTags?: () => Array<string>,
     getBuildRun?: () => boolean,
+    getBuildInjectStopCode?: () => boolean,
     getRunArgs?: () => Array<string>,
     getRunEnv?: () => { [key: string]: string },
+    setRunStopFn?: (cb: () => Promise<void>) => () => Promise<void>,
     setOpenWindows?: (mapper: (prevWindows: Array<React.ReactNode>) => Array<React.ReactNode>) => Promise<any>
 }
 

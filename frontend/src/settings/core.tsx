@@ -18,8 +18,10 @@ type SettingsState = {
     buildTarget: string, // OS/arch for build target
     buildTags: string, // Comma-separated build tags
     buildRun: boolean, // Run after build
+    buildInjectStopCode: boolean, // Inject stop code to code before compiling
     runArgs: string, // Shell run arguments
     runEnv: string, // Comma-separated run environment (= separated key and value)
+    runStop?: () => Promise<void>, // If the Go code currently running, this is set to the force stop function
     windows: Array<React.ReactNode> // reference to code editor windows currently open
 }
 
@@ -37,13 +39,19 @@ export class Settings extends React.Component<{}, SettingsState> {
             buildTarget: "js/wasm",
             buildTags: "example,tag",
             buildRun: true,
+            buildInjectStopCode: true,
             runArgs: "arg1 \"arg2 with spaces\"",
             runEnv: "VAR=VALUE,VAR2=VALUE2",
+            runStop: undefined,
             windows: []
         }
     }
 
     setProgress = async (p: number) => this.setState((prevState) => ({...prevState, loadingProgress: p}))
+    setRunStopFn = (runStop?: () => Promise<void>): () => Promise<void> => {
+        this.setState((prevState) => ({...prevState, runStop: runStop}))
+        return this.state.runStop // Returns the previous value
+    }
 
     async componentDidMount() {
         // Set up root filesystem (go installation), while reporting progress
@@ -67,7 +75,7 @@ export class Settings extends React.Component<{}, SettingsState> {
 
     renderSettingsTrigger = (loadingProgress: number) => {
         return <button onClick={this.openTrigger}>
-            <FontAwesomeIcon icon={faGear} className={loadingProgress < 0 ? "" : "spinning"}/>
+            <FontAwesomeIcon icon={faGear} className={loadingProgress < 0 && !this.state.runStop ? "" : "spinning"}/>
             {loadingProgress < 0 ? "" :
                 <ProgressBar completed={loadingProgress * 100} height={"5px"} animateOnRender isLabelVisible={false}
                              bgColor={"rgb(212, 56, 256)"} baseBgColor={"rgb(53, 14, 77)"}/>}
@@ -89,9 +97,11 @@ export class Settings extends React.Component<{}, SettingsState> {
                                     getBuildTarget={() => this.state.buildTarget.split("/") as any}
                                     getBuildTags={() => this.state.buildTags.split(",")}
                                     getBuildRun={() => this.state.buildRun}
+                                    getBuildInjectStopCode={() => this.state.buildInjectStopCode}
                                     getRunArgs={() => commandArgs2Array(this.state.runArgs)}
                                     getRunEnv={() => Object.assign({}, ...this.state.runEnv.split(",")
                                         .map((el) => ({[el.split("=")[0]]: el.split("=")[1]})))}
+                                    setRunStopFn={this.setRunStopFn}
                                     setOpenWindows={(mapper) => new Promise((resolve) => this.setState(
                                         (prevState) => ({...prevState, windows: mapper(prevState.windows)}),
                                         async () => {
@@ -123,6 +133,14 @@ export class Settings extends React.Component<{}, SettingsState> {
                            title={"Comma-separated build-tags to select included files in compilation"}/>
                 </div>
                 <div className={"settings-options"}>
+                    <label htmlFor={"build-stop"}>Inject stop code: </label>
+                    <span style={{"flex": "100000000"}}/>
+                    <input id={"build-stop"} type={"checkbox"} checked={this.state.buildInjectStopCode}
+                           onChange={(ev) =>
+                               this.setState((prevState) => ({...prevState, buildInjectStopCode: ev.target.checked}))}
+                           title={"Automatically try to run built executables after a successful compilation"}/>
+                </div>
+                <div className={"settings-options"}>
                     <label htmlFor={"build-run"}>Run after build: </label>
                     <span style={{"flex": "100000000"}}/>
                     <input id={"build-run"} type={"checkbox"} checked={this.state.buildRun} onChange={(ev) =>
@@ -150,7 +168,13 @@ export class Settings extends React.Component<{}, SettingsState> {
                         this.setState((prevState) => ({...prevState, runEnv: (ev.target as HTMLInputElement).value}))}
                            title={"Comma-separated environment variables, containing key and value separated by equals"}/>
                 </div>
-                {/* TODO: Running notifier + force stop hack*/}
+                <div className={"settings-options"}>
+                    <label htmlFor={"run-stop"}>{this.state.runStop ?
+                        <span style={{"color": "green"}}>Running</span> : "Not running"} </label>
+                    <input id={"run-stop"} type={"button"} disabled={!this.state.runStop} value={"Force stop"}
+                           onClick={(ev) => this.state.runStop()}
+                           title={"Stop the running process (only works if hack ---enabled above--- is applied on compilation)"}/>
+                </div>
             </div>
         </div>
     }
