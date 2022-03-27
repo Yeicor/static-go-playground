@@ -33,11 +33,11 @@ jobs:
         id: archive
         run: |
           set -ex
-          VERSION=$GITHUB_REF_NAME
+          VERSION=$(git rev-parse --short "$GITHUB_SHA")
           PKGNAME="static-go-playground-$VERSION"
           TARBALL="$PKGNAME.tar.gz"
           SHASUM="$PKGNAME.tar.gz.sha256"
-          cd dist/ && tar -czf "../$TARBALL" .
+          cd dist/ && tar -czf "../$TARBALL" . && cd ..
           cmake -E sha256sum $TARBALL > $SHASUM
           echo "::set-output name=tarball::$TARBALL"
           echo "::set-output name=shasum::$SHASUM"
