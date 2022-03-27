@@ -32,6 +32,7 @@ jobs:
       - name: Create tarball from production build
         id: archive
         run: |
+          set -ex
           VERSION=$GITHUB_REF_NAME
           PKGNAME="static-go-playground-$VERSION"
           TARBALL="$PKGNAME.tar.gz"

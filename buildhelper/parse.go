@@ -7,6 +7,8 @@ import (
 	"go/build"
 	"go/parser"
 	"go/token"
+	"golang.org/x/mod/modfile"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -175,7 +177,17 @@ func invalidateCachesRecursive(res *parsedTreeNode) bool {
 }
 
 func parseFindDirForImport(importPath, buildDir, tmpBuildDir, goPath string, ctx build.Context) (dirOrArchive string, isInternal bool, precompiledArchive string) {
-	// TODO: Check path relative to Go module (get go module name and remove prefix)
+	// Check path relative to Go module (get go module name and remove prefix)
+	goModDir, importPathGoMod := findAndParseGoMod(buildDir)
+	if importPathGoMod != "" {
+		subImportPath := strings.TrimSuffix(importPath, importPathGoMod)
+		if subImportPath != importPath {
+			modulePath := filepath.Join(goModDir, subImportPath)
+			if _, err := os.Stat(modulePath); err == nil {
+				return modulePath, false, checkPrecompiledCache(tmpBuildDir, importPath, modulePath)
+			}
+		}
+	}
 	// Check vendor directory.
 	vendorPath := filepath.Join(buildDir, "vendor", importPath)
 	if _, err := os.Stat(vendorPath); err == nil {
@@ -203,6 +215,34 @@ func parseFindDirForImport(importPath, buildDir, tmpBuildDir, goPath string, ctx
 	}
 	// An empty dirOrArchive means not found
 	return "", false, ""
+}
+
+func findAndParseGoMod(dirOrFile string) (baseDir string, modulePath string) {
+	dirOrFile, err := filepath.Abs(dirOrFile)
+	if err != nil {
+		return "", ""
+	}
+	stat, err := os.Stat(dirOrFile)
+	if err != nil {
+		return "", ""
+	}
+	if stat.IsDir() {
+		dir := dirOrFile
+		possibleGoModFile := filepath.Join(dir, "go.mod")
+		openGoMod, err := os.Open(possibleGoModFile)
+		if err == nil {
+			all, err := ioutil.ReadAll(openGoMod)
+			if err == nil {
+				modulePath = modfile.ModulePath(all)
+				return dir, modulePath // Found and parsed go.mod file
+			}
+		} // Not found, keep searching
+	}
+	parentDir := filepath.Dir(dirOrFile)
+	if parentDir != dirOrFile { // Recurse
+		return findAndParseGoMod(parentDir)
+	}
+	return "", "" // Not found
 }
 
 func checkPrecompiledCache(buildDir string, importPath string, sourcesPath string) string {
