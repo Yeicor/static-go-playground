@@ -385,7 +385,10 @@ export class ActionRun extends Action<{ fb: VirtualFileBrowser, folderOrFilePath
         if (this.props.fb.props.getRunArgs) runArgs = this.props.fb.props.getRunArgs()
         let runEnv = {}
         if (this.props.fb.props.getRunEnv) runEnv = this.props.fb.props.getRunEnv()
-        await goRun(fs, exePath, runArgs, this.props.fb.state.cwd, runEnv).runPromise
+        let exitCode = await goRun(fs, exePath, runArgs, this.props.fb.state.cwd, runEnv).runPromise
+        if (exitCode !== 0) {
+            console.error("Run failed, check logs")
+        }
     }
 
     private getExePath(): string {

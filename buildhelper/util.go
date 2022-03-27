@@ -7,12 +7,16 @@ import (
 	"path/filepath"
 )
 
-func goSrcPath() string {
-	return filepath.Join(build.Default.GOROOT, "src")
+func goSrcPath(ctx build.Context) string {
+	return filepath.Join(ctx.GOROOT, "src")
 }
 
-func goPkgPath() string {
-	return filepath.Join(build.Default.GOROOT, "pkg", build.Default.GOOS+"_"+build.Default.GOARCH)
+func goPkgPath(ctx build.Context) string {
+	return filepath.Join(ctx.GOROOT, "pkg", ctx.GOOS+"_"+ctx.GOARCH)
+}
+
+func pkgArchiveCacheFor(importPath string, buildDir string) string {
+	return filepath.Join(buildDir, "_pkg_"+hashString(importPath)+".a")
 }
 
 func hashString(s string) string {

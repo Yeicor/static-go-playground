@@ -101,9 +101,8 @@ export class Settings extends React.Component<{}, SettingsState> {
                 <select value={this.state.buildTarget}
                         onChange={(ev) => this.setState((prevState) =>
                             ({...prevState, buildTarget: ev.target.value}))}
-                        title={"Cross-compilation! may require downloading precompiled files (not implemented)"}>
-                    {SupportedTargets.map((t) =>
-                        <option key={t} value={t} disabled={t !== "js/wasm" && t !== "linux/amd64"}>{t}</option>)}
+                        title={"Target executable OS/arch for cross-compilation"}>
+                    {SupportedTargets.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
             </div>
             <div className={"settings-options"}>

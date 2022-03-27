@@ -1,10 +1,9 @@
 // Compiling once mitigates performance problems of Function
-// @ts-ignore
-import wasmExecJsCode from "bundle-text:./wasm_exec.js.gen"
 import {readCache} from "../fs/utils"
 import {getProcessForFS} from "./process"
 
-const parsedWasmExecJs = Function("global", wasmExecJsCode as string)
+// @ts-ignore
+const parsedWasmExecJs = import("bundle-text:./wasm_exec.js.gen").then(wasmExecJsCode => Function("global", wasmExecJsCode as string))
 export const defaultGoEnv = {
     "GOROOT": "/usr/lib/go"
     // "GOPATH": "/doesNotExist"
@@ -32,7 +31,8 @@ export const goRun = (fs: any, fsUrl: string, argv: string[] = [], cwd = "/", en
                 "process": getProcessForFS(fs),
                 "Go": undefined // Will be set when parsed code is executed
             }
-            parsedWasmExecJs(globalHack)
+            let wasmExecJsFunc = await parsedWasmExecJs
+            wasmExecJsFunc(globalHack)
             const go = new globalHack.Go()
             // Read from virtual FS (should be very fast and not benefit from streaming compilation)
             let wasmBytes = await readCache(fs, fsUrl)

@@ -27,7 +27,8 @@ fs-zip: # Zips the filesystem and remove the original
 	cd "${DIST}/fs" && zip -${ZIP_COMPRESSION} -r - . >../fs.zip
 	rm -r "${DIST}/fs"
 
-bootstrap-go-pkg: bootstrap-go-pkg-prepare bootstrap-go-pkg-toolchain cmd-go cmd-buildhelper cmd-compile cmd-link go-list-targets bootstrap-go-pkg-cleanup
+bootstrap-go-pkg: bootstrap-go-pkg-prepare bootstrap-go-pkg-toolchain cmd-go cmd-buildhelper cmd-compile cmd-pack \
+	cmd-link cmd-asm go-list-targets bootstrap-go-pkg-cleanup
 
 bootstrap-go-pkg-prepare:
 	mkdir -p "${DIST}/tmp-bootstrap"
@@ -38,15 +39,22 @@ bootstrap-go-pkg-prepare:
 bootstrap-go-pkg-toolchain: bootstrap-go-pkg-prepare # Bootstrap the go library to the fs to get the pre-cross-compiled executable tools and wasm .a files for the standard library
 	cd "${DIST}/tmp-bootstrap/src" && GOROOT_BOOTSTRAP="${GOROOT}" GOOS=js GOARCH=wasm ./bootstrap.bash || true
 	mkdir -p "${DIST}/fs/usr/lib/go"
-	cp -r "${DIST}/go-js-wasm-bootstrap/pkg" "${DIST}/fs/usr/lib/go" # Copy compiled .a files to fs
+	cp -r "${DIST}/go-js-wasm-bootstrap/src" "${DIST}/fs/usr/lib/go" # Copy standard library source files to fs
+	cp -r "${DIST}/go-js-wasm-bootstrap/pkg" "${DIST}/fs/usr/lib/go" # Copy precompiled standard library (and some extras) to fs
+	mkdir -p "${DIST}/fs/usr/lib/go/pkg"
+	cp -r "${DIST}/go-js-wasm-bootstrap/pkg/include" "${DIST}/fs/usr/lib/go/pkg" # Copy some small header files
 
 bootstrap-go-pkg-cleanup: bootstrap-go-pkg-toolchain # Clean up
+	# Remove unneeded files from sources to speed up initial download (~70% of original size uncompressed, but some packages may break!)
+	find "${DIST}/fs/usr/lib/go/src" -type f \( ! \( -name "*.go" -or -name "*.s" -or -name "*.h" \) -or -name "*_test*" \) -delete
+	# Include only precompiled files for js/wasm (deleting the host architecture which is build by default when cross-compiling the compiler)
+	find "$$(cd "${DIST}/fs/usr/lib/go/pkg/" && pwd)" -mindepth 1 -maxdepth 1 \
+	-not \( -name "js_wasm" -or -name "tool" -or -name "include" \) -exec rm -r {} +
+	# Delete some tools built for the host's OS/arch
+	find "$$(cd "${DIST}/fs/usr/lib/go/pkg/tool/" && pwd)" -mindepth 1 -maxdepth 1 \
+ 	-not \( -name "js_wasm" \) -exec rm -r {} +
+ 	# Remove temporary toolchains
 	rm -r "${DIST}/tmp-bootstrap" "${DIST}/go-js-wasm-bootstrap"
-	rm -r "${DIST}/fs/usr/lib/go/pkg/obj" || true
-	rm -r "${DIST}/fs/usr/lib/go/pkg/include" || true
- 	# Include also host toolchain to be able to build executables for its arch
- 	# TODO: Alternatively, try to include the source code of the standard library and compile it for the necessary architectures at runtime
-	#rm -r "${DIST}/fs/usr/lib/go/pkg/tool/linux_amd64" || true
 
 cmd-go: bootstrap-go-pkg-toolchain # Builds go command (for high level info, not actually needed as go build is replaced)
 	export GOROOT="$(CURDIR)/${DIST}/go-js-wasm-bootstrap" && \
@@ -71,12 +79,26 @@ cmd-compile: bootstrap-go-pkg-toolchain # Builds compile command (for lower leve
 	cd "$$BUILD_DIR" && GOOS=js GOARCH=wasm $$GOROOT/bin/go build -ldflags="-X 'main.goVersion=$$goVERSION'" -trimpath \
 		-o "$(CURDIR)/$$OUT_DIR/compile" -v . && echo $$goVERSION
 
+cmd-pack: bootstrap-go-pkg-toolchain # Builds pack command (for lower level go build)
+	export GOROOT="$(CURDIR)/${DIST}/go-js-wasm-bootstrap" && \
+	export BUILD_DIR="$$GOROOT/src/cmd/pack/" && \
+	export OUT_DIR="${DIST}/fs/usr/lib/go/pkg/tool/js_wasm" && \
+	mkdir -p "$$OUT_DIR" && \
+	cd "$$BUILD_DIR" && GOOS=js GOARCH=wasm $$GOROOT/bin/go build -trimpath -o "$(CURDIR)/$$OUT_DIR/pack" -v .
+
 cmd-link: bootstrap-go-pkg-toolchain # Builds link command (for lower level go build)
 	export GOROOT="$(CURDIR)/${DIST}/go-js-wasm-bootstrap" && \
 	export BUILD_DIR="$$GOROOT/src/cmd/link/" && \
 	export OUT_DIR="${DIST}/fs/usr/lib/go/pkg/tool/js_wasm" && \
 	mkdir -p "$$OUT_DIR" && \
 	cd "$$BUILD_DIR" && GOOS=js GOARCH=wasm $$GOROOT/bin/go build -trimpath -o "$(CURDIR)/$$OUT_DIR/link" -v .
+
+cmd-asm: bootstrap-go-pkg-toolchain # Builds asm command (for lower level go build)
+	export GOROOT="$(CURDIR)/${DIST}/go-js-wasm-bootstrap" && \
+	export BUILD_DIR="$$GOROOT/src/cmd/asm/" && \
+	export OUT_DIR="${DIST}/fs/usr/lib/go/pkg/tool/js_wasm" && \
+	mkdir -p "$$OUT_DIR" && \
+	cd "$$BUILD_DIR" && GOOS=js GOARCH=wasm $$GOROOT/bin/go build -trimpath -o "$(CURDIR)/$$OUT_DIR/asm" -v .
 
 go-list-targets: bootstrap-go-pkg-toolchain # Lists the targets available for the given tool
 	export GOROOT="$(CURDIR)/${DIST}/go-js-wasm-bootstrap" && \

@@ -1,5 +1,4 @@
-
-import {deleteRecursive, readCache, stat} from "../fs/utils"
+import {readCache, stat} from "../fs/utils"
 import {defaultGoEnv, goRun} from "./run"
 
 export const GOROOT = "/usr/lib/go/"
@@ -8,15 +7,20 @@ export const CmdBuildHelperPath = GOROOT + "bin/buildhelper"
 export const CmdGoToolsPath = GOROOT + "pkg/tool/js_wasm" // compile & link
 
 const performBuildInternal = async (fs: any, commands: string[][], cwd: string,
-                                    buildEnv: { [p: string]: string } = defaultGoEnv, progress?: (p: number) => Promise<any>) => {
+                                    buildEnv: { [p: string]: string } = defaultGoEnv, progress?: (p: number) => Promise<any>): Promise<boolean> => {
     let numCommands = commands.length
     for (let i = 0; i < numCommands; i++) {
         let commandParts = commands[i]
         // Add full path to go installation for tool command (works for compile and link)
         commandParts[0] = CmdGoToolsPath + "/" + commandParts[0]
-        await goRun(fs, commandParts[0], commandParts.slice(1), cwd, buildEnv).runPromise
+        let exitCode = await goRun(fs, commandParts[0], commandParts.slice(1), cwd, buildEnv).runPromise
+        if (exitCode !== 0) {
+            console.error("Build failed, check logs")
+            return false
+        }
         if (progress) await progress(goBuildParsingProgress + (1 - goBuildParsingProgress) * (i + 1) / numCommands)
     }
+    return true
 }
 
 const goBuildParsingProgress = 0.25
@@ -27,26 +31,31 @@ export const goBuild = async (fs: any, sourcePath: string, outputExePath: string
     if (progress) await progress(0)
     let buildFilesTmpDir = "/tmp/build"
     try {
-        // Clean up previous intermediary build files
         await stat(fs, buildFilesTmpDir)
-        await deleteRecursive(fs, buildFilesTmpDir)
+        // Do not delete previous intermediary build files (as they may be used as a cache)
+        // await deleteRecursive(fs, buildFilesTmpDir)
     } catch (doesNotExist) { // Not found, ignore
+        // Automatic mode: using the buildhelper compiled above, which relies on Go's internal build system
+        await fs.mkdir(buildFilesTmpDir)
     }
-    // Automatic mode: using the buildhelper compiled above, which relies on Go's internal build system
-    await fs.mkdir(buildFilesTmpDir)
     // Generate the configuration files and commands
     let buildEnv = {...defaultGoEnv, "GOOS": goos, "GOARCH": goarch, ...envOverrides}
     let buildTagsStr = buildTags.join(",")
     let sourceStat = await stat(fs, sourcePath)
+    let exitCode: number
     if (sourceStat.isFile()) {
         let splitAt = sourcePath.lastIndexOf("/")
         let sourceParentDir = sourcePath.substring(0, splitAt)
         let sourceRelPath = sourcePath.substring(splitAt + 1)
-        await goRun(fs, CmdBuildHelperPath, [sourceRelPath, buildFilesTmpDir, buildTagsStr], sourceParentDir, buildEnv).runPromise
+        exitCode = await goRun(fs, CmdBuildHelperPath, [sourceRelPath, buildFilesTmpDir, buildTagsStr], sourceParentDir, buildEnv).runPromise
     } else if (sourceStat.isDirectory()) {
-        await goRun(fs, CmdBuildHelperPath, [".", buildFilesTmpDir, buildTagsStr], sourcePath, buildEnv).runPromise
+        exitCode = await goRun(fs, CmdBuildHelperPath, [".", buildFilesTmpDir, buildTagsStr], sourcePath, buildEnv).runPromise
     } else {
         console.error("Unsupported go build target", sourceStat)
+        return
+    }
+    if (exitCode !== 0) {
+        console.error("Build failed, check logs")
         return
     }
     if (progress) await progress(goBuildParsingProgress)
@@ -55,7 +64,8 @@ export const goBuild = async (fs: any, sourcePath: string, outputExePath: string
     // console.log("Read commands file:", commandsJson)
     let commandsArray = JSON.parse(new TextDecoder("utf-8").decode(commandsJson))
     // Execute all compile and link commands to generate a.out
-    await performBuildInternal(fs, commandsArray, buildFilesTmpDir, buildEnv, progress)
-    // Move to wanted location
-    await fs.rename(buildFilesTmpDir + "/a.out", outputExePath)
+    if (await performBuildInternal(fs, commandsArray, buildFilesTmpDir, buildEnv, progress)) {
+        // Move executable to wanted location
+        await fs.rename(buildFilesTmpDir + "/a.out", outputExePath)
+    } // else build failed
 }

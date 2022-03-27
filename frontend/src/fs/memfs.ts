@@ -155,37 +155,39 @@ export const openVirtualFSMemory = () => {
     }
 
     // Debug: write all FS calls to console
-    // noinspection JSUnusedGlobalSymbols
-    /* tslint:disable no-console no-arg */
-    const handler = {
-        get: function (target, property) {
-            if (property in target && target[property] instanceof Function) {
-                return function () {
-                    console.debug(property, ">>", arguments)
-                    let callback = undefined
-                    if (arguments[arguments.length - 1] instanceof Function) {
-                        const origCB = arguments[arguments.length - 1]
-                        const newCB = function () {
-                            console.debug(property, "<<", arguments)
-                            // return Reflect.apply(origCB, arguments.callee, arguments)
-                            return origCB(...(arguments as any))
+    if (process.env.NODE_ENV !== 'production') {
+        /* tslint:disable no-console no-arg */
+        // noinspection JSUnusedGlobalSymbols
+        const handler = {
+            get: function (target, property) {
+                if (property in target && target[property] instanceof Function) {
+                    return function () {
+                        console.debug(property, ">>", arguments)
+                        let callback = undefined
+                        if (arguments[arguments.length - 1] instanceof Function) {
+                            const origCB = arguments[arguments.length - 1]
+                            const newCB = function () {
+                                console.debug(property, "<<", arguments)
+                                // return Reflect.apply(origCB, arguments.callee, arguments)
+                                return origCB(...(arguments as any))
+                            }
+                            arguments[arguments.length - 1] = newCB
+                            callback = newCB
                         }
-                        arguments[arguments.length - 1] = newCB
-                        callback = newCB
+                        let res = Reflect.apply(target[property], target, arguments)
+                        if (!callback) {
+                            console.debug(property, "<<", res)
+                        }
+                        return res
                     }
-                    let res = Reflect.apply(target[property], target, arguments)
-                    if (!callback) {
-                        console.debug(property, "<<", res)
-                    }
-                    return res
+                } else {
+                    return target[property]
                 }
-            } else {
-                return target[property]
             }
         }
+        /* tslint:enable */
+        myMemoryFS = new Proxy(myMemoryFS, handler)
     }
-    /* tslint:enable */
-    myMemoryFS = new Proxy(myMemoryFS, handler)
 
     return myMemoryFS
 }

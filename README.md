@@ -3,18 +3,21 @@
 <!-- TODO: Tags -->
 [![Build](https://github.com/Yeicor/static-go-playground/actions/workflows/deploy.yaml/badge.svg)](https://github.com/Yeicor/static-go-playground/actions/workflows/deploy.yaml)
 
-## [TODO: Try it!]
-
-TODO: instructions
-
 ## Features
 
 - Full Go Compiler running on the browser: no load for the server & can be deployed easily.
-    - Supports multiple files and packages (including dependencies!).
     - Supports using custom build tags.
+    - Incremental builds (build cache).
+    - Supports multiple files and packages (including dependencies!).
+    - Full cross-compiling support directly from your browser.
 - Full filesystem abstraction (TODO: optionally persistent) for both the compiler and running programs.
-- Full DOM access for running programs (and very basic terminal emulation, stdout/stderr-only for now).
-- [ ] Code editor ([Ace](https://ace.c9.io/)).
+    - TODO: Download a standalone wasm_exec.js with filesystem support.
+- Full DOM access for running programs (and basic stdout/stderr for now).
+- Browser-based code editor ([Ace](https://ace.c9.io/)).
+
+## Use it to provide hackable examples for your Go project!
+
+TODO: instructions and demo
 
 ## Go Compiler on browser
 
@@ -27,18 +30,20 @@ browser.
 Why? To learn how the Go compiler works and to provide better (hackable) demos for most Go projects with easy
 deployment.
 
-### Do you only want to extend wasm_exec.js with filesystem support?
+### Standard library
 
-Download it from [TODO].
+There are 2 approaches to handle the standard library:
 
-WARNING: The filesystem is good enough for the Go compiler to work, but may still have some bugs: open an issue if you
-find one.
+- Precompiling it while building the compiler: faster first compilation but requires a bigger (slower) initial download
+  and only supports building for one OS/arch, unless another precompiled library is downloaded.
+- Compiling the standard library from the browser (only the required packages): It allows to cross-compile to any
+  OS/arch supported by Go at the cost of an slower initial build: compiled artifacts are cached once built for the first
+  time (this happens automatically for all packages with unmodified sources).
 
-### Use it to provide hackable examples for your Go project!
+A mix of both was applied: the precompiled standard library for js/wasm is downloaded. Cross-compiling is also possible
+because the source code of the standard library is also downloaded, which is used for any other OS/arch.
 
-TODO: instructions
-
-## Building from source
+## Building from source / development
 
 Dependencies:
 
@@ -46,19 +51,31 @@ Dependencies:
 - `node` and `npm`/`yarn`
 - Very common UNIX tools.
 
-Just run `make`: it will output a static site to `dist/` that can be uploaded to any web server.
+Just run `make`: it will output a static site to `dist/` that can be uploaded to any web server. To learn how it works,
+start by looking at the [Makefile](Makefile).
 
 Alternatively, you can just download the latest [TODO: artifact.zip].
 
 ## Known limitations
 
-- Limitations of building and running on `js/wasm`:
+- Limitations of building on `js/wasm`:
+    - No Cgo support.
+- Limitations of running on `js/wasm`:
     - Limited network access (available: HTTP client, WebRTC...).
     - Limited persistent storage (can be blocked/deleted by user).
-    - No Cgo support.
 - Dependencies must be vendored (due to limited network access).
 
 ## Related projects
 
-- https://github.com/ccbrown/wasm-go-playground
-- https://github.com/wcchoi/go-wasm-pdfcpu/blob/master/article.md
+Updated: 03/2022
+
+- The official Go Playground ([link](https://go.dev/play/)): limited execution time, no DOM access, no output until the
+  program finishes, [limited multi-package support](https://go.dev/play/p/BWJ4dcUqVfT).
+- Better Go Playground ([link](https://goplay.tools/)): has an experimental webassembly runtime, but includes no
+  filesystem abstraction and still requires a server backend to build the webassembly modules, no multi-package support.
+- pdfcpu ([link](https://github.com/wcchoi/go-wasm-pdfcpu/blob/master/article.md)): Example of running a Go CLI tool on
+  the web browser, inspiration for this project.
+- Wasm go playground ([link](https://github.com/ccbrown/wasm-go-playground)): No standard library, no dependencies, no
+  multi-file support, no cross-compilation, inspiration for this project
+- Go Playground WASM ([link]()): Actually compiles [Goscript](https://github.com/oxfeeefeee/goscript) (a script language
+  like Python or Lua written in Rust, with exactly the same syntax as Go's) instead of using the official Go Compiler.
