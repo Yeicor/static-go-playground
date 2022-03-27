@@ -102,3 +102,18 @@
         transform: rotate(360deg);
     }
 }
+
+.collapsible-parent {
+    display: flex;
+    flex-direction: column;
+}
+
+.collapsible {
+    max-height: 0;
+    overflow-y: auto;
+    transition: max-height 0.26s ease;
+}
+
+.collapsible.collapsible-expanded {
+    max-height: 60vh;
+}

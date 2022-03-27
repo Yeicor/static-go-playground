@@ -1,4 +1,4 @@
-import {faGear, faPlus} from "@fortawesome/free-solid-svg-icons"
+import {faAngleDown, faAngleUp, faGear} from "@fortawesome/free-solid-svg-icons"
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome"
 import ProgressBar from "@ramonak/react-progress-bar"
 import React from "react"
@@ -13,6 +13,7 @@ import {VirtualFileBrowser} from "./vfs"
 type SettingsState = {
     loadingProgress: number, // If >= 0, it is loading (downloading FS, compiling code, etc.). The maximum is 1.
     open: boolean, // Whether the settings are currently open.
+    openHeaders: Array<boolean>, // Whether the settings headers are currently open.
     fs: any, // The current FileSystem
     buildTarget: string, // OS/arch for build target
     buildTags: string, // Comma-separated build tags
@@ -30,6 +31,7 @@ export class Settings extends React.Component<{}, SettingsState> {
         this.state = {
             loadingProgress: 0.0,
             open: true,
+            openHeaders: [true, true, true],
             fs: openVirtualFS("memory", "default"), // TODO: Implement more & let the user choose
             buildTarget: "js/wasm",
             buildTags: "example,tag",
@@ -71,66 +73,75 @@ export class Settings extends React.Component<{}, SettingsState> {
     }
 
     renderSettings = () => {
-        return <div className={"tooltip-content settings-tooltip" + (this.state.open ? " tooltip-visible" : "")}>
+        return <div className={"tooltip-content settings-tooltip collapsible-parent" + (this.state.open ? " tooltip-visible" : "")}>
             <div className={"settings-options settings-options-title"}>
                 <h4>Files</h4>
-                <button onClick={() => {
-                    /*TODO*/
-                }}><FontAwesomeIcon icon={faPlus}/></button>
+                <button onClick={() => this.setState((prevState) => ({
+                    ...prevState,
+                    openHeaders: [!prevState.openHeaders[0], ...prevState.openHeaders.slice(-2)],
+                }))}><FontAwesomeIcon icon={this.state.openHeaders[0] ? faAngleUp : faAngleDown}/></button>
             </div>
-            <VirtualFileBrowser fs={this.state.fs} ref={this.vfsBrowser} setProgress={this.setProgress}
-                                getBuildTarget={() => this.state.buildTarget.split("/") as any}
-                                getBuildTags={() => this.state.buildTags.split(",")}
-                                getRunArgs={() => commandArgs2Array(this.state.runArgs)}
-                                getRunEnv={() => Object.assign({}, ...this.state.runEnv.split(",")
-                                    .map((el) => ({[el.split("=")[0]]: el.split("=")[1]})))}
-                                setOpenWindows={(mapper) => new Promise((resolve) => this.setState(
-                                    (prevState) => ({...prevState, windows: mapper(prevState.windows)}),
-                                    async () => {
-                                        await this.vfsBrowser.current.refreshFilesCwd()
-                                        resolve(0)
-                                    }))}/>
+            <div className={"collapsible" + (this.state.openHeaders[0] ? " collapsible-expanded" : "")}>
+                <VirtualFileBrowser fs={this.state.fs} ref={this.vfsBrowser} setProgress={this.setProgress}
+                                    getBuildTarget={() => this.state.buildTarget.split("/") as any}
+                                    getBuildTags={() => this.state.buildTags.split(",")}
+                                    getRunArgs={() => commandArgs2Array(this.state.runArgs)}
+                                    getRunEnv={() => Object.assign({}, ...this.state.runEnv.split(",")
+                                        .map((el) => ({[el.split("=")[0]]: el.split("=")[1]})))}
+                                    setOpenWindows={(mapper) => new Promise((resolve) => this.setState(
+                                        (prevState) => ({...prevState, windows: mapper(prevState.windows)}),
+                                        async () => {
+                                            await this.vfsBrowser.current.refreshFilesCwd()
+                                            resolve(0)
+                                        }))}/>
+            </div>
             <div className={"settings-options settings-options-title"}>
                 <h4>Build settings</h4>
-                <button onClick={() => {
-                    /*TODO*/
-                }}><FontAwesomeIcon icon={faPlus}/></button>
+                <button onClick={() => this.setState((prevState) => ({
+                    ...prevState,
+                    openHeaders: [...prevState.openHeaders.slice(0, 1), !prevState.openHeaders[1], ...prevState.openHeaders.slice(-1)],
+                }))}><FontAwesomeIcon icon={this.state.openHeaders[1] ? faAngleUp : faAngleDown}/></button>
             </div>
-            <div className={"settings-options"}>
-                <label htmlFor={"target-arch"}>Target OS/arch: </label>
-                <select value={this.state.buildTarget}
-                        onChange={(ev) => this.setState((prevState) =>
-                            ({...prevState, buildTarget: ev.target.value}))}
-                        title={"Target executable OS/arch for cross-compilation"}>
-                    {SupportedTargets.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
+            <div className={"collapsible" + (this.state.openHeaders[1] ? " collapsible-expanded" : "")}>
+                <div className={"settings-options"}>
+                    <label htmlFor={"target-arch"}>Target OS/arch: </label>
+                    <select value={this.state.buildTarget}
+                            onChange={(ev) => this.setState((prevState) =>
+                                ({...prevState, buildTarget: ev.target.value}))}
+                            title={"Target executable OS/arch for cross-compilation"}>
+                        {SupportedTargets.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                </div>
+                <div className={"settings-options"}>
+                    <label htmlFor={"build-tags"}>Build tags: </label>
+                    <input id={"build-tags"} type={"text"} value={this.state.buildTags} onChange={(ev) =>
+                        this.setState((prevState) => ({...prevState, buildTags: ev.target.value}))}
+                           title={"Comma-separated build-tags to select included files in compilation"}/>
+                </div>
+                {/* TODO: Run on build */}
             </div>
-            <div className={"settings-options"}>
-                <label htmlFor={"build-tags"}>Build tags: </label>
-                <input id={"build-tags"} type={"text"} value={this.state.buildTags} onChange={(ev) =>
-                    this.setState((prevState) => ({...prevState, buildTags: ev.target.value}))}
-                       title={"Comma-separated build-tags to select included files in compilation"}/>
-            </div>
-            {/* TODO: Run on build */}
             <div className={"settings-options settings-options-title"}>
                 <h4>Run settings</h4>
-                <button onClick={() => {
-                    /*TODO*/
-                }}><FontAwesomeIcon icon={faPlus}/></button>
+                <button onClick={() => this.setState((prevState) => ({
+                    ...prevState,
+                    openHeaders: [...prevState.openHeaders.slice(0, 2), !prevState.openHeaders[2]],
+                }))}><FontAwesomeIcon icon={this.state.openHeaders[2] ? faAngleUp : faAngleDown}/></button>
             </div>
-            <div className={"settings-options"}>
-                <label htmlFor={"run-args"}>Run args: </label>
-                <input id={"run-args"} type={"text"} value={this.state.runArgs} onChange={(ev) =>
-                    this.setState((prevState) => ({...prevState, runArgs: (ev.target as HTMLInputElement).value}))}
-                       title={"Command line arguments (bash-like interpretation)"}/>
+            <div className={"collapsible" + (this.state.openHeaders[2] ? " collapsible-expanded" : "")}>
+                <div className={"settings-options"}>
+                    <label htmlFor={"run-args"}>Run args: </label>
+                    <input id={"run-args"} type={"text"} value={this.state.runArgs} onChange={(ev) =>
+                        this.setState((prevState) => ({...prevState, runArgs: (ev.target as HTMLInputElement).value}))}
+                           title={"Command line arguments (bash-like interpretation)"}/>
+                </div>
+                <div className={"settings-options"}>
+                    <label htmlFor={"run-env"}>Run env: </label>
+                    <input id={"run-env"} type={"text"} value={this.state.runEnv} onChange={(ev) =>
+                        this.setState((prevState) => ({...prevState, runEnv: (ev.target as HTMLInputElement).value}))}
+                           title={"Comma-separated environment variables, containing key and value separated by equals"}/>
+                </div>
+                {/* TODO: Running notifier + force stop hack*/}
             </div>
-            <div className={"settings-options"}>
-                <label htmlFor={"run-env"}>Run env: </label>
-                <input id={"run-env"} type={"text"} value={this.state.runEnv} onChange={(ev) =>
-                    this.setState((prevState) => ({...prevState, runEnv: (ev.target as HTMLInputElement).value}))}
-                       title={"Comma-separated environment variables, containing key and value separated by equals"}/>
-            </div>
-            {/* TODO: Running notifier + force stop hack*/}
         </div>
     }
 }
