@@ -369,18 +369,20 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
             let codeBytes2 = new TextEncoder().encode(code)
             await writeCache(this.props.fb.props.fs, this.mainGoFile, codeBytes2)
         }
-        await goBuild(fs, buildFile, outFile, buildTags, buildTarget[0], buildTarget[1], {}, this.props.fb.props.setProgress)
+        let success = await goBuild(fs, buildFile, outFile, buildTags, buildTarget[0], buildTarget[1], {}, this.props.fb.props.setProgress);
         if (hackedCodePreviousVal) { // Restore previous code
             await writeCache(this.props.fb.props.fs, this.mainGoFile, hackedCodePreviousVal)
         }
         await this.props.fb.refreshFilesCwd()
-        // Run after build if configured
-        let runAfterBuild = false
-        if (this.props.fb.props.getBuildRun) runAfterBuild = this.props.fb.props.getBuildRun()
-        if (runAfterBuild) {
-            await new ActionRun({...this.props, folderOrFilePath: outFile, isDir: false}, {}).onClick()
+        if (success) {
+            // Run after build if configured
+            let runAfterBuild = false
+            if (this.props.fb.props.getBuildRun) runAfterBuild = this.props.fb.props.getBuildRun()
+            if (runAfterBuild) {
+                await new ActionRun({...this.props, folderOrFilePath: outFile, isDir: false}, {}).onClick()
+            }
+            if (this.props.fb.props.setProgress) await this.props.fb.props.setProgress(-1) // Done
         }
-        if (this.props.fb.props.setProgress) await this.props.fb.props.setProgress(-1) // Done
     }
 }
 

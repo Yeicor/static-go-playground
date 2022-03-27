@@ -92,13 +92,18 @@ export const openVirtualFSMemory = () => {
     myMemoryFS.writeSync = function (fd, buf, offset, length, position, callback) {
         if (fd === 1 || fd === 2) {
             // TODO: Custom console listener (and also handle stdin!)
-            if (offset !== 0 || length !== buf.length || position !== null) {
+            if (offset && length) {
+                buf = buf.slice(offset, offset + length)
+            }
+            if (position) {
                 if (callback) callback(enosys())
+                console.error("Cannot write at an specific position of stdout/stderr")
                 return -1
             }
             outputBuf += decoder.decode(buf)
-            const nl = outputBuf.lastIndexOf("\n")
-            if (nl !== -1) {
+            while (true) {
+                const nl = outputBuf.lastIndexOf("\n")
+                if (nl == -1) break
                 console.log(outputBuf.substr(0, nl))
                 outputBuf = outputBuf.substr(nl + 1)
             }

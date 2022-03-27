@@ -45,7 +45,7 @@ jobs:
       - name: Upload tarball as draft release
         uses: softprops/action-gh-release@v1
         with:
-          title: "Production build"
+          name: "Production build"
           body: "Draft release generated automatically from a push"
           draft: true
           files: |

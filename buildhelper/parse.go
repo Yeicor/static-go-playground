@@ -92,6 +92,9 @@ func parseRecursive(fset *token.FileSet, pkgDirOrFile, impPath, buildDir, tmpBui
 		pkg = a
 		break
 	}
+	if pkg == nil { // FIXME
+		return nil, errors.New("FAIL: Import \"" + impPath + "\" had no matching packages in expected directory " + pkgDirOrFile)
+	}
 	// Add all assembly files in dir as source (will be filtered by os/arch later)
 	dir, err := os.ReadDir(pkgDir)
 	if err != nil {
@@ -180,16 +183,20 @@ func parseFindDirForImport(importPath, buildDir, tmpBuildDir, goPath string, ctx
 	// Check path relative to Go module (get go module name and remove prefix)
 	goModDir, importPathGoMod := findAndParseGoMod(buildDir)
 	if importPathGoMod != "" {
-		subImportPath := strings.TrimSuffix(importPath, importPathGoMod)
+		subImportPath := strings.TrimPrefix(importPath, importPathGoMod)
 		if subImportPath != importPath {
 			modulePath := filepath.Join(goModDir, subImportPath)
-			if _, err := os.Stat(modulePath); err == nil {
+			if stat, err := os.Stat(modulePath); err == nil && stat.IsDir() {
 				return modulePath, false, checkPrecompiledCache(tmpBuildDir, importPath, modulePath)
 			}
 		}
 	}
 	// Check vendor directory.
-	vendorPath := filepath.Join(buildDir, "vendor", importPath)
+	buildModDir := buildDir
+	if goModDir != "" {
+		buildModDir = goModDir
+	}
+	vendorPath := filepath.Join(buildModDir, "vendor", importPath)
 	if _, err := os.Stat(vendorPath); err == nil {
 		return vendorPath, false, checkPrecompiledCache(tmpBuildDir, importPath, vendorPath)
 	}
