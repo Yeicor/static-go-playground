@@ -24,7 +24,7 @@ jobs:
         run: |
           set -e
           curl -L https://github.com/WebAssembly/binaryen/releases/download/version_105/binaryen-version_105-x86_64-linux.tar.gz | tar xzf -
-          echo "`pwd`/binaryen-*/bin" > $GITHUB_PATH
+          echo `pwd`/binaryen-*/bin | tee /dev/stderr >> $GITHUB_PATH
 
       - name: Build compiler and frontend
         run: make
@@ -45,6 +45,8 @@ jobs:
       - name: Upload tarball as draft release
         uses: softprops/action-gh-release@v1
         with:
+          title: "Production build"
+          body: "Draft release generated automatically from a push"
           draft: true
           files: |
             ${{ steps.archive.outputs.tarball }}
