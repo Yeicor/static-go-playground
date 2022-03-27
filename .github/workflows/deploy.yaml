@@ -20,13 +20,31 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '16'
+      - name: Install binaryen (for wasm-opt tool)
+        run: |
+          set -e
+          curl -L https://github.com/WebAssembly/binaryen/releases/download/version_105/binaryen-version_105-x86_64-linux.tar.gz | tar xzf -
+          echo "`pwd`/binaryen-*/bin" > $GITHUB_PATH
 
       - name: Build compiler and frontend
         run: make
 
-      - name: Upload generated artifacts
-        uses: actions/upload-artifact@v3
+      - name: Archive tarball
+        id: archive
+        run: |
+          VERSION=$GITHUB_REF_NAME
+          PKGNAME="static-go-playground-$VERSION"
+          TARBALL="$PKGNAME.tar.gz"
+          SHASUM="$PKGNAME.tar.gz.sha256"
+          cd dist/ && tar -czf "$TARBALL" .
+          cmake -E sha256sum $TARBALL > $SHASUM
+          echo "::set-output name=tarball::$TARBALL"
+          echo "::set-output name=shasum::$SHASUM"
+
+      - name: Upload tarball
+        uses: softprops/action-gh-release@v1
         with:
-          name: dist
-          path: dist
-          retention-days: 30
+          draft: true
+          files: |
+            ${{ steps.archive.outputs.tarball }}
+            ${{ steps.archive.outputs.shasum }}
