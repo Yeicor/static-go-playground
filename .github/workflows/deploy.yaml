@@ -29,19 +29,19 @@ jobs:
       - name: Build compiler and frontend
         run: make
 
-      - name: Archive tarball
+      - name: Create tarball from production build
         id: archive
         run: |
           VERSION=$GITHUB_REF_NAME
           PKGNAME="static-go-playground-$VERSION"
           TARBALL="$PKGNAME.tar.gz"
           SHASUM="$PKGNAME.tar.gz.sha256"
-          cd dist/ && tar -czf "$TARBALL" .
+          cd dist/ && tar -czf "../$TARBALL" .
           cmake -E sha256sum $TARBALL > $SHASUM
           echo "::set-output name=tarball::$TARBALL"
           echo "::set-output name=shasum::$SHASUM"
 
-      - name: Upload tarball
+      - name: Upload tarball as draft release
         uses: softprops/action-gh-release@v1
         with:
           draft: true
