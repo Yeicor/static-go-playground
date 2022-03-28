@@ -346,7 +346,10 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
             let codeBytes = await readCache(this.props.fb.props.fs, this.mainGoFile)
             hackedCodePreviousVal = codeBytes
             let code = new TextDecoder().decode(codeBytes)
-            let packageMainStart = code.search("package\s+main")
+            let packageMainStart = code.search(/package\s+main/)
+            if (packageMainStart == -1) {
+                throw new Error("Could not find package main in " + this.mainGoFile)
+            }
             let packageMainLength = code.substring(packageMainStart).indexOf("\n") + 2
             let packageMainEnd = packageMainStart + packageMainLength
             code = code.substring(0, packageMainEnd) + `import (
@@ -354,7 +357,7 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
                 hackOs23894589 "os"
                 hackRuntime23894589 "runtime"
                 hackJs23894589 "syscall/js"
-            )` + code.substring(packageMainEnd) + `func init() {
+            )\n` + code.substring(packageMainEnd) + `\nfunc init() {
                 if hackRuntime23894589.GOOS == "js" {
                     jsGlobalStopFnName := hackOs23894589.Getenv("` + BUILD_HACK_STOP_FN_ENV_VAR_NAME + `")
                     hackFmt23894589.Println("Setting global function to force stop at", jsGlobalStopFnName)
@@ -366,6 +369,7 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
                     }
                 }
             }`
+            console.log("Hacked code:", code)
             let codeBytes2 = new TextEncoder().encode(code)
             await writeCache(this.props.fb.props.fs, this.mainGoFile, codeBytes2)
         }
@@ -425,6 +429,14 @@ export class ActionRun extends Action<{ fb: VirtualFileBrowser, folderOrFilePath
     }
 
     onClick = async () => {
+        // Reset DOM in case it was modified
+        for (let i = 0; i < document.body.children.length; i++) {
+            let child = document.body.children[i]
+            if (child.id != "sgp-root") {
+                child.remove()
+            }
+        }
+        // Start the execution
         let fs = this.props.fb.props.fs
         let exePath = this.getExePath()
         let runArgs = []

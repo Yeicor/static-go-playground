@@ -30,7 +30,7 @@ export const goBuild = async (fs: any, sourcePath: string, outputExePath: string
                               goos = "js", goarch = "wasm", envOverrides: { [key: string]: string } = {},
                               progress?: (p: number) => Promise<any>): Promise<boolean> => {
     if (progress) await progress(0)
-    let buildFilesTmpDir = "/tmp/build/" + goos + "_" + goarch
+    let buildFilesTmpDir = "/tmp/build/" + goos + "_" + goarch + "/" + buildTags.join("_")
     // Do not delete previous intermediary build files (as they may be used as a cache)
     await mkdirs(fs, buildFilesTmpDir)
     // Generate the configuration files and commands

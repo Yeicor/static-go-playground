@@ -12,7 +12,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 )
 
@@ -53,14 +52,14 @@ func parseRecursive(fset *token.FileSet, pkgDirOrFile, impPath, buildDir, tmpBui
 	var pkgs map[string]*ast.Package
 	pkgDir := pkgDirOrFile
 	if stat.IsDir() {
-		pkgs, err = parser.ParseDir(fset, pkgDirOrFile, nil, parser.AllErrors)
+		pkgs, err = parser.ParseDir(fset, pkgDirOrFile, nil, parser.ImportsOnly)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		pkgDir = filepath.Dir(pkgDirOrFile)
 		buildDir = filepath.Dir(buildDir)
-		file, err := parser.ParseFile(fset, pkgDirOrFile, nil, parser.AllErrors)
+		file, err := parser.ParseFile(fset, pkgDirOrFile, nil, parser.ImportsOnly)
 		if err != nil {
 			return nil, err
 		}
@@ -74,26 +73,29 @@ func parseRecursive(fset *token.FileSet, pkgDirOrFile, impPath, buildDir, tmpBui
 		}
 	}
 	// Filter main/test/etc. packages (based on package name as there may be multiple packages in a directory)
-	expectedPkgName := impPath[strings.LastIndex(impPath, "/")+1:]
-	pkgs = map[string]*ast.Package{
-		expectedPkgName: pkgs[expectedPkgName],
+	for pkgName := range pkgs {
+		if impPath != "main" && pkgName == "main" || strings.Contains(pkgName, "_test") {
+			delete(pkgs, pkgName)
+		}
 	}
 	if len(pkgs) == 0 {
 		return nil, errors.New("Import \"" + impPath + "\" had no matching packages in expected directory " + pkgDirOrFile)
 	}
-	if err != nil {
-		return nil, err
-	}
-	if len(pkgs) != 1 {
-		log.Println("Found " + strconv.Itoa(len(pkgs)) + " pkgs at " + pkgDirOrFile + " (" + impPath + "): " + fmt.Sprint(pkgs))
-	}
+	// We expect only one package to match the import path
 	var pkg *ast.Package
-	for _, a := range pkgs {
-		pkg = a
-		break
-	}
-	if pkg == nil { // FIXME
-		return nil, errors.New("FAIL: Import \"" + impPath + "\" had no matching packages in expected directory " + pkgDirOrFile)
+	if len(pkgs) > 1 {
+		// If more than one package is found, try to match the import name
+		expectedPkgName := impPath[strings.LastIndex(impPath, "/")+1:]
+		foundPkg, ok := pkgs[expectedPkgName]
+		if !ok {
+			return nil, fmt.Errorf("more than one package found %s for %s", pkgs, pkgDirOrFile)
+		}
+		pkg = foundPkg
+	} else {
+		for _, a := range pkgs {
+			pkg = a
+			break
+		}
 	}
 	// Add all assembly files in dir as source (will be filtered by os/arch later)
 	dir, err := os.ReadDir(pkgDir)
@@ -106,7 +108,7 @@ func parseRecursive(fset *token.FileSet, pkgDirOrFile, impPath, buildDir, tmpBui
 		}
 	}
 	log.Println("Parsing", impPath, "(", pkgDirOrFile, ") with", len(pkg.Files), "source files")
-	// Prepare parsed tree, recursing into dependencies
+	// Prepare parsed tree, also exploring dependencies
 	node := &parsedTreeNode{
 		name:                        pkg.Name,
 		dir:                         pkgDir,

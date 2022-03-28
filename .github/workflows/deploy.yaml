@@ -45,8 +45,8 @@ jobs:
       - name: Upload tarball as draft release
         uses: softprops/action-gh-release@v1
         with:
-          name: "Production build"
-          body: "Draft release generated automatically from a push"
+          name: "Production builds"
+          body: "Draft release which receives all production builds."
           draft: true
           files: |
             ${{ steps.archive.outputs.tarball }}
