@@ -20,20 +20,20 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '16'
-      - name: Install binaryen (for wasm-opt tool)
-        run: |
-          set -e
-          curl -L https://github.com/WebAssembly/binaryen/releases/download/version_105/binaryen-version_105-x86_64-linux.tar.gz | tar xzf -
-          echo `pwd`/binaryen-*/bin | tee /dev/stderr >> $GITHUB_PATH
+#      - name: Install binaryen (wasm-opt tool)
+#        run: |
+#          set -e
+#          curl -L https://github.com/WebAssembly/binaryen/releases/download/version_105/binaryen-version_105-x86_64-linux.tar.gz | tar xzf -
+#          echo `pwd`/binaryen-*/bin | tee /dev/stderr >> $GITHUB_PATH
 
       - name: Build compiler and frontend
-        run: make
+        run: make WASM_OPT_DISABLE=true
 
       - name: Create tarball from production build
         id: archive
         run: |
           set -ex
-          VERSION=$(git rev-parse --short "$GITHUB_SHA")
+          VERSION="$(date +%F)-$(git rev-parse --short "$GITHUB_SHA")"
           PKGNAME="static-go-playground-$VERSION"
           TARBALL="$PKGNAME.tar.gz"
           SHASUM="$PKGNAME.tar.gz.sha256"
@@ -46,7 +46,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           name: "Production builds"
-          body: "Draft release which receives all production builds."
+          body: "Draft release which collects all recent production builds."
           draft: true
           files: |
             ${{ steps.archive.outputs.tarball }}

@@ -41,12 +41,12 @@ export const goRun = (fs: any, fsUrl: string, argv: string[] = [], cwd = "/", en
                 go.argv = go.argv.concat(argv) // First is the program name, already set
                 env[BUILD_HACK_STOP_FN_ENV_VAR_NAME] = stopFnName
                 go.env = env
-                    await go.run(tmp.instance)
+                await go.run(tmp.instance)
             } catch (e) {
                 console.error("%c>>>>> runGoExe:", cssLog, e)
             }
             delete globalHack[stopFnName]
-            return go.exit_code || -1
+            return go.exit_code !== 0 && !go.exit_code ? -1 : go.exit_code
         })()),
         forceStop: async () => {
             if (globalHack[stopFnName]) {

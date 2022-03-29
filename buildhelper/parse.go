@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -181,6 +182,8 @@ func invalidateCachesRecursive(res *parsedTreeNode) bool {
 	return cached
 }
 
+var versionMajorRegex = regexp.MustCompile("/v([0-9]+)/?$")
+
 func parseFindDirForImport(importPath, buildDir, tmpBuildDir, goPath string, ctx build.Context) (dirOrArchive string, isInternal bool, precompiledArchive string) {
 	// Check path relative to Go module (get go module name and remove prefix)
 	goModDir, importPathGoMod := findAndParseGoMod(buildDir)
@@ -222,6 +225,11 @@ func parseFindDirForImport(importPath, buildDir, tmpBuildDir, goPath string, ctx
 	if _, err := os.Stat(standardSrcPath); err == nil {
 		return standardSrcPath, true, checkPrecompiledCache(tmpBuildDir, importPath, standardSrcPath)
 	}
+	// Remove /vN suffix from the import path and try again (https://research.swtch.com/vgo-module)
+	match := versionMajorRegex.FindString(importPath)
+	if match != "" {
+		return parseFindDirForImport(importPath[:len(importPath)-len(match)], buildDir, tmpBuildDir, goPath, ctx)
+	}
 	// An empty dirOrArchive means not found
 	return "", false, ""
 }
@@ -242,6 +250,7 @@ func findAndParseGoMod(dirOrFile string) (baseDir string, modulePath string) {
 		if err == nil {
 			all, err := ioutil.ReadAll(openGoMod)
 			if err == nil {
+				// TODO: Handle go.mod replace directives
 				modulePath = modfile.ModulePath(all)
 				return dir, modulePath // Found and parsed go.mod file
 			}

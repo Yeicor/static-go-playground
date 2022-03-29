@@ -15,7 +15,7 @@ const performBuildInternal = async (fs: any, commands: string[][], cwd: string,
         commandParts[0] = CmdGoToolsPath + "/" + commandParts[0]
         let exitCode = await goRun(fs, commandParts[0], commandParts.slice(1), cwd, buildEnv).runPromise
         if (exitCode !== 0) {
-            console.error("Build failed, check logs")
+            console.error("Build failed, check logs. Exit code: ", exitCode)
             return false
         }
         if (progress) await progress(goBuildParsingProgress + (1 - goBuildParsingProgress) * (i + 1) / numCommands)
@@ -50,7 +50,7 @@ export const goBuild = async (fs: any, sourcePath: string, outputExePath: string
         return false
     }
     if (exitCode !== 0) {
-        console.error("Build failed, check logs")
+        console.error("Build failed, check logs. Exit code: ", exitCode)
         return false
     }
     if (progress) await progress(goBuildParsingProgress)
