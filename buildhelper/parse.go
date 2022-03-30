@@ -12,7 +12,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 )
 
@@ -22,7 +21,7 @@ type parsedTreeNode struct {
 	goFileNames                 []string
 	assemblyFileNames           []string
 	validPrecompiledArchivePath string
-	imports                     []*parsedTreeNode
+	imports                     []*parsedTreeNode // all of this package's imports (including repeated ones)
 }
 
 func parse(buildDir string, tmpBuildDir string, buildCtx build.Context) (*parsedTreeNode, bool, error) {
@@ -40,7 +39,7 @@ func parse(buildDir string, tmpBuildDir string, buildCtx build.Context) (*parsed
 		return nil, false, err
 	}
 	// Post-process to remove caches if any descendant is not cached
-	invalidateCachesRecursive(res)
+	invalidateCachesRecursive(res, map[*parsedTreeNode]bool{})
 	return res, precompiledInternal, err
 }
 
@@ -89,7 +88,7 @@ func parseRecursive(fset *token.FileSet, pkgDirOrFile, impPath, buildDir, tmpBui
 		expectedPkgName := impPath[strings.LastIndex(impPath, "/")+1:]
 		foundPkg, ok := pkgs[expectedPkgName]
 		if !ok {
-			return nil, fmt.Errorf("more than one package found %s for %s", pkgs, pkgDirOrFile)
+			return nil, fmt.Errorf("more than one package found %v for %s", pkgs, pkgDirOrFile)
 		}
 		pkg = foundPkg
 	} else {
@@ -147,14 +146,25 @@ func parseRecursive(fset *token.FileSet, pkgDirOrFile, impPath, buildDir, tmpBui
 			}
 			importDir, internal, precompiled := parseFindDirForImport(importPath, buildDir, tmpBuildDir, buildCtx.GOPATH, buildCtx)
 			if importDir == "" {
-				return nil, errors.New("Import \"" + importPath + "\" not found in standard locations!")
+				return nil, errors.New("Import \"" + importPath + "\" not found in standard locations " +
+					"(make sure the output of `go mod vendor` is included and updated!)")
 			}
 			if precompiledInternal && internal { // Avoid exploration of the precompiled standard library if available (assume OK for performance)
 				continue
 			}
-			if _ /*exploredData*/, alreadyExplored := explored[importDir]; alreadyExplored {
-				// Mark dependency (to properly compile in order), also checking that there are no import cycles!
-				//node.imports = append(node.imports, exploredData)
+			if exploredData, alreadyExplored := explored[importDir]; alreadyExplored {
+				// Mark dependency (to properly compile in order)
+				alreadyRegistered := false
+				for _, dep := range node.imports {
+					if dep == exploredData {
+						alreadyRegistered = true
+						break
+					}
+				}
+				if !alreadyRegistered {
+					node.imports = append(node.imports, exploredData)
+					// TODO: check that there are no import cycles (the compiler will fail later anyway)
+				}
 			} else {
 				child, err := parseRecursive(fset, importDir, importPath, buildDir, tmpBuildDir, buildCtx, internal, precompiledInternal, explored)
 				if err != nil {
@@ -170,24 +180,37 @@ func parseRecursive(fset *token.FileSet, pkgDirOrFile, impPath, buildDir, tmpBui
 	return node, err
 }
 
-func invalidateCachesRecursive(res *parsedTreeNode) bool {
-	for _, node := range res.imports {
-		if !invalidateCachesRecursive(node) {
+func invalidateCachesRecursive(node *parsedTreeNode, exploredAndCached map[*parsedTreeNode]bool) bool {
+	// Check if it was already compiled (more than one node depends on this package, and it was already processed) and skip
+	if v, ok := exploredAndCached[node]; ok {
+		return v
+	}
+	exploredAndCached[node] = true
+	// Explore dependencies, to know if we should invalidate the cache for this node
+	for _, dep := range node.imports {
+		if !invalidateCachesRecursive(dep, exploredAndCached) {
 			// Disable the cache of the parent
-			res.validPrecompiledArchivePath = ""
+			node.validPrecompiledArchivePath = ""
 		}
 	}
 	// And notify parents recursively
-	cached := res.validPrecompiledArchivePath != ""
+	cached := node.validPrecompiledArchivePath != ""
+	exploredAndCached[node] = cached
 	return cached
 }
 
-var versionMajorRegex = regexp.MustCompile("/v([0-9]+)/?$")
-
 func parseFindDirForImport(importPath, buildDir, tmpBuildDir, goPath string, ctx build.Context) (dirOrArchive string, isInternal bool, precompiledArchive string) {
 	// Check path relative to Go module (get go module name and remove prefix)
-	goModDir, importPathGoMod := findAndParseGoMod(buildDir)
+	goModDir, importPathGoMod, replaces := findAndParseGoMod(buildDir)
 	if importPathGoMod != "" {
+		// Apply go.mod package import path replacements
+		for from, to := range replaces {
+			if strings.HasPrefix(importPath, from) {
+				importPath = to + importPath[len(from):]
+				break
+			}
+		}
+		// Perform the actual check
 		subImportPath := strings.TrimPrefix(importPath, importPathGoMod)
 		if subImportPath != importPath {
 			modulePath := filepath.Join(goModDir, subImportPath)
@@ -225,23 +248,18 @@ func parseFindDirForImport(importPath, buildDir, tmpBuildDir, goPath string, ctx
 	if _, err := os.Stat(standardSrcPath); err == nil {
 		return standardSrcPath, true, checkPrecompiledCache(tmpBuildDir, importPath, standardSrcPath)
 	}
-	// Remove /vN suffix from the import path and try again (https://research.swtch.com/vgo-module)
-	match := versionMajorRegex.FindString(importPath)
-	if match != "" {
-		return parseFindDirForImport(importPath[:len(importPath)-len(match)], buildDir, tmpBuildDir, goPath, ctx)
-	}
 	// An empty dirOrArchive means not found
 	return "", false, ""
 }
 
-func findAndParseGoMod(dirOrFile string) (baseDir string, modulePath string) {
+func findAndParseGoMod(dirOrFile string) (baseDir string, modulePath string, replace map[string]string) {
 	dirOrFile, err := filepath.Abs(dirOrFile)
 	if err != nil {
-		return "", ""
+		return "", "", nil
 	}
 	stat, err := os.Stat(dirOrFile)
 	if err != nil {
-		return "", ""
+		return "", "", nil
 	}
 	if stat.IsDir() {
 		dir := dirOrFile
@@ -250,9 +268,19 @@ func findAndParseGoMod(dirOrFile string) (baseDir string, modulePath string) {
 		if err == nil {
 			all, err := ioutil.ReadAll(openGoMod)
 			if err == nil {
-				// TODO: Handle go.mod replace directives
-				modulePath = modfile.ModulePath(all)
-				return dir, modulePath // Found and parsed go.mod file
+				// Handle go.mod replace directives
+				lax, err := modfile.ParseLax(possibleGoModFile, all, nil)
+				if err == nil {
+					replaces := map[string]string{}
+					for _, r := range lax.Replace {
+						replaces[r.Old.Path] = r.New.Path
+					}
+					return dir, lax.Module.Mod.Path, replaces // Found and parsed go.mod file
+				} else {
+					log.Println("Error parsing go.mod file:", err)
+				}
+			} else {
+				log.Println("Error reading go.mod file:", err)
 			}
 		} // Not found, keep searching
 	}
@@ -260,7 +288,7 @@ func findAndParseGoMod(dirOrFile string) (baseDir string, modulePath string) {
 	if parentDir != dirOrFile { // Recurse
 		return findAndParseGoMod(parentDir)
 	}
-	return "", "" // Not found
+	return "", "", nil // Not found
 }
 
 func checkPrecompiledCache(buildDir string, importPath string, sourcesPath string) string {

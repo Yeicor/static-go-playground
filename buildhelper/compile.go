@@ -15,7 +15,7 @@ func compile(t *parsedTreeNode, buildDir string, precompiledInternal bool, build
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	commands, linkPackages, err := compileRecursive(t, true, importCfg, buildDir, nil, nil, buildCtx)
+	commands, linkPackages, err := compileRecursive(t, true, importCfg, buildDir, nil, nil, buildCtx, map[*parsedTreeNode]struct{}{})
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -40,10 +40,21 @@ func compile(t *parsedTreeNode, buildDir string, precompiledInternal bool, build
 	return importCfg, commands, linkPackages, err
 }
 
-func compileRecursive(node *parsedTreeNode, isRoot bool, cfg *os.File, buildDir string, commands [][]string, linkPackages []string, buildCtx build.Context) ([][]string, []string, error) {
-	for _, dep := range node.imports {
-		commands, linkPackages, _ = compileRecursive(dep, false, cfg, buildDir, commands, linkPackages, buildCtx)
+// compileRecursive compiles generates all compile commands based on the parsed tree structure.
+// It ensures that all dependencies are already compiled before compiling the current package.
+func compileRecursive(node *parsedTreeNode, isRoot bool, cfg *os.File, buildDir string, commands [][]string, linkPackages []string, buildCtx build.Context, alreadyCompiled map[*parsedTreeNode]struct{}) ([][]string, []string, error) {
+	// Check if it was already compiled (more than one node depends on this package, and it was already processed) and skip
+	if _, ok := alreadyCompiled[node]; ok {
+		return commands, linkPackages, nil
 	}
+	alreadyCompiled[node] = struct{}{}
+
+	// Recurse into dependencies
+	for _, dep := range node.imports {
+		commands, linkPackages, _ = compileRecursive(dep, false, cfg, buildDir, commands, linkPackages, buildCtx, alreadyCompiled)
+	}
+
+	// Check if the package is already cached and register it
 	cachedCompiledArchive := node.validPrecompiledArchivePath != ""
 	log.Println("Processing", node.importPath, "(", node.dir, ") internal =", node.internal, ", cached =", cachedCompiledArchive)
 	pkgObj := pkgArchiveCacheFor(node.importPath, buildDir)
@@ -62,6 +73,7 @@ func compileRecursive(node *parsedTreeNode, isRoot bool, cfg *os.File, buildDir 
 		return commands, linkPackages, nil // Nothing more to do
 	}
 
+	// ### Generate all commands to compile the current package
 	// === ASM (pre-pass to generate symbol ABIs) ===
 	symabisFilePath := filepath.Join(buildDir, "symabis_"+hashString(node.importPath))
 	if len(node.assemblyFileNames) > 0 {

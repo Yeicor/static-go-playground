@@ -42,7 +42,7 @@ export class CodeEditor extends React.Component<CodeEditorProps, CodeEditorState
             onChange={this.onChange}
             value={this.state.code}
             name={this.state.editorID}
-            style={{"height": "calc(100% - 27px)", "width": "100%", "marginTop": "-10px"}}
+            style={{"height": "calc(100% - 25px)", "width": "100%", "marginTop": "-10px"}}
         />
     }
 }

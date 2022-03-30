@@ -22,7 +22,7 @@ type SettingsState = {
     runArgs: string, // Shell run arguments
     runEnv: string, // Comma-separated run environment (= separated key and value)
     runStop?: () => Promise<void>, // If the Go code currently running, this is set to the force stop function
-    windows: Array<React.ReactNode> // reference to code editor windows currently open
+    windows: Array<[string, React.ReactNode]> // reference to code editor windows currently open
 }
 
 export class Settings extends React.Component<{}, SettingsState> {
@@ -69,7 +69,7 @@ export class Settings extends React.Component<{}, SettingsState> {
         return <div id={"sgp-settings"} className={"tooltip"}>
             {this.renderSettingsTrigger(this.state.loadingProgress)}
             {this.renderSettings()}
-            {this.state.windows.map(e => <span key={performance.now()}>{e}</span>)}
+            {this.state.windows.map(e => <span key={e[0]}>{e[1]}</span>)}
         </div>
     }
 
@@ -172,7 +172,7 @@ export class Settings extends React.Component<{}, SettingsState> {
                     <label htmlFor={"run-stop"}>{this.state.runStop ?
                         <span style={{"color": "green"}}>Running</span> : "Not running"} </label>
                     <input id={"run-stop"} type={"button"} disabled={!this.state.runStop} value={"Force stop"}
-                           onClick={(ev) => this.state.runStop()}
+                           onClick={this.state.runStop}
                            title={"Stop the running process (only works if hack ---enabled above--- is applied on compilation)"}/>
                 </div>
             </div>

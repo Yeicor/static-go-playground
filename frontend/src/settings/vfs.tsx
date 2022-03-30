@@ -26,12 +26,14 @@ type VirtualFileBrowserProps = {
     getRunArgs?: () => Array<string>,
     getRunEnv?: () => { [key: string]: string },
     setRunStopFn?: (cb: () => Promise<void>) => () => Promise<void>,
-    setOpenWindows?: (mapper: (prevWindows: Array<React.ReactNode>) => Array<React.ReactNode>) => Promise<any>
+    setOpenWindows?: (mapper: (prevWindows: Array<[string, React.ReactNode]>) => Array<[string, React.ReactNode]>) => Promise<any>
 }
 
 type VirtualFileBrowserState = { cwd: string, files: Array<FileData> }
 
 export class VirtualFileBrowser extends React.Component<VirtualFileBrowserProps, VirtualFileBrowserState> {
+    openFiles: Array<string> = []
+
     constructor(props: VirtualFileBrowserProps, context: any) {
         super(props, context)
         this.state = {cwd: "/", files: []}
@@ -94,16 +96,21 @@ export class VirtualFileBrowser extends React.Component<VirtualFileBrowserProps,
         } else { // FILE: open for editing
             let fStat = await stat(this.props.fs, fullPath)
             if (!(fStat.isFile() && fStat.size < 1024 * 1024)) {
-                return // (if small enough)
+                return false // (if small enough)
+            }
+            if (this.openFiles.indexOf(fullPath) >= 0) {
+                return false // (if not already open)
             }
             let refToRemove
-            refToRemove = <CodeEditorWindow fs={this.props.fs} path={fullPath} onClose={async () => {
+            refToRemove = [fullPath, <CodeEditorWindow fs={this.props.fs} path={fullPath} onClose={async () => {
                 await this.props.setOpenWindows(prev => {
+                    this.openFiles.splice(this.openFiles.indexOf(fullPath), 1)
                     prev.splice(prev.indexOf(refToRemove), 1)
                     return prev
                 })
-            }} key={fullPath}/>
+            }} key={fullPath}/>]
             await this.props.setOpenWindows(prev => {
+                this.openFiles.push(fullPath)
                 prev.push(refToRemove)
                 return prev
             })

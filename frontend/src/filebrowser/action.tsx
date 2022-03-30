@@ -369,7 +369,7 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
                     }
                 }
             }`
-            console.log("Hacked code:", code)
+            // console.log("Hacked code:", code)
             let codeBytes2 = new TextEncoder().encode(code)
             await writeCache(this.props.fb.props.fs, this.mainGoFile, codeBytes2)
         }

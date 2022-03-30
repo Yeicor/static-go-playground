@@ -1,4 +1,9 @@
 
+.react-draggable {
+    position: absolute;
+    z-index: 2;
+}
+
 .react-draggable strong {
     background: #ddd;
     border: 1px solid #999;
@@ -20,13 +25,8 @@
 .window {
     width: 600px;
     height: 400px;
-    background: red;
 }
 
-.window-top-bar {
-    display: flex;
-}
-
-.window-top-bar-fill {
-    flex-grow: 10000;
+.window-top-bar > button {
+    float: right;
 }

@@ -13,11 +13,11 @@ export class CodeEditorWindow extends React.Component<CodeEditorWindowProps, {}>
         super(props, context)
     }
 
-    render() {
+    render() { // TODO: Resizable code editor windows
         return <Draggable handle="strong">
             <div className="box no-cursor window">
                 <strong className="cursor window-top-bar">
-                    <span className={"window-top-bar-fill"}>{this.props.path}</span>
+                    <span>{this.props.path}</span>
                     <button onClick={this.props.onClose}><FontAwesomeIcon icon={faClose}/></button>
                 </strong>
                 <CodeEditor {...this.props}/>
