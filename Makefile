@@ -110,9 +110,4 @@ wasm-opt: fs # OPTIONAL: Optimizes all wasm files in ${DIST}/
 	[ -z "${WASM_OPT_DISABLE}" ] && command -v wasm-opt && \
 	find "$(CURDIR)/${DIST}/" -type f -print -exec file {} \; | grep WebAssembly | sed 's/:[^:]*//g' | \
 	tr '\n' '\0' | xargs -0 -I {} /usr/bin/env bash -c "echo 'Optimizing {}...' && \
-	wasm-opt -O4 --coalesce-locals-learning --code-folding --code-pushing --const-hoisting --dce \
-	--duplicate-function-elimination --flatten --inlining-optimizing --local-cse --memory-packing --merge-blocks \
-	--merge-locals --metrics --optimize-instructions --pick-load-signs --precompute --precompute-propagate \
-	--reorder-functions --reorder-locals --flatten --rereloop --rse --simplify-locals-notee-nostructure --vacuum \
-	-o '{}.opt' '{}' && mv '{}.opt' '{}'" || echo "wasm-opt disabled, not found or failed and will be skipped"
-	# TODO: Use a different optimization selection strategy than https://makeameme.org/meme/much-yes-many
+	wasm-opt -O4 -o '{}.opt' '{}' && mv '{}.opt' '{}'" || echo "wasm-opt disabled, not found or failed and will be skipped"

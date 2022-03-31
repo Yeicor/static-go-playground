@@ -20,14 +20,14 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '16'
-#      - name: Install binaryen (wasm-opt tool)
-#        run: |
-#          set -e
-#          curl -L https://github.com/WebAssembly/binaryen/releases/download/version_105/binaryen-version_105-x86_64-linux.tar.gz | tar xzf -
-#          echo `pwd`/binaryen-*/bin | tee /dev/stderr >> $GITHUB_PATH
+      - name: Install binaryen (wasm-opt tool)
+        run: |
+          set -e
+          curl -L https://github.com/WebAssembly/binaryen/releases/download/version_105/binaryen-version_105-x86_64-linux.tar.gz | tar xzf -
+          echo `pwd`/binaryen-*/bin | tee /dev/stderr >> $GITHUB_PATH
 
       - name: Build compiler and frontend
-        run: make WASM_OPT_DISABLE=true
+        run: make
 
       - name: Create tarball from production build
         id: archive
