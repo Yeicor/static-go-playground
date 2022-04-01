@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         go: [ '1.17' ] # TODO: More Go versions
-    name: Build Go Compiler and frontend (Go ${{ matrix.go }})
+    name: Go ${{ matrix.go }}
     steps:
       - uses: actions/checkout@v3
 

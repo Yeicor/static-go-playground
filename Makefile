@@ -16,9 +16,9 @@ frontend-prod: # Build the frontend
 	myYarn="yarn" && if ! command -v $$myYarn; then export myYarn="npm"; fi && \
 	cd frontend && $$myYarn install && $$myYarn run build
 
-static: wasm_exec # Prepare and copy other static files for the website (not handled by frontend builder)
+static: wasm-exec # Prepare and copy other static files for the website (not handled by frontend builder)
 
-wasm_exec: # Copy the original wasm_exec.js (with minimal fixes for bundling) from the compiled distribution
+wasm-exec: # Copy the original wasm_exec.js (with minimal fixes for bundling) from the compiled distribution
 	sed -E 's/require\(/global.require\(/g; s/([^.])process/\1global.process/g; s/([^.])fs([\w.])/\1global.fs\2/g; s/\(code\) => \{/(code) => {this.exit_code=code;/' \
 		"${GOROOT}/misc/wasm/wasm_exec.js" >"frontend/src/go/wasm_exec.js.gen"
 
@@ -114,7 +114,7 @@ wasm-opt: fs # OPTIONAL: Optimizes all wasm files in ${DIST}/
 	tr '\n' '\0' | xargs -0 -I {} /usr/bin/env bash -c "echo 'Optimizing {}...' && \
 	wasm-opt -O4 -o '{}.opt' '{}' && mv '{}.opt' '{}'" || echo "wasm-opt disabled, not found or failed and will be skipped"
 
-wasm_exec: # Builds the standalone wasm_exec.js with filesystem support (not needed if building the main app)
+wasm_exec: wasm-exec # Builds the standalone wasm_exec.js with filesystem support (not needed if building the main app)
 	mkdir -p ${DIST_WASM_EXEC}
 	# Copy the minimally modified index.html
 	cp "frontend/src/fs/standalone/index.html" "${DIST_WASM_EXEC}/index.html"
