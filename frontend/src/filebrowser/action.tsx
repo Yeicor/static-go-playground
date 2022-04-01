@@ -347,7 +347,7 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
             hackedCodePreviousVal = codeBytes
             let code = new TextDecoder().decode(codeBytes)
             let packageMainStart = code.search(/package\s+main/)
-            if (packageMainStart == -1) {
+            if (packageMainStart === -1) {
                 throw new Error("Could not find package main in " + this.mainGoFile)
             }
             let packageMainLength = code.substring(packageMainStart).indexOf("\n") + 2
@@ -373,7 +373,7 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
             let codeBytes2 = new TextEncoder().encode(code)
             await writeCache(this.props.fb.props.fs, this.mainGoFile, codeBytes2)
         }
-        let success = await goBuild(fs, buildFile, outFile, buildTags, buildTarget[0], buildTarget[1], {}, this.props.fb.props.setProgress);
+        let success = await goBuild(fs, buildFile, outFile, buildTags, buildTarget[0], buildTarget[1], {}, this.props.fb.props.setProgress)
         if (hackedCodePreviousVal) { // Restore previous code
             await writeCache(this.props.fb.props.fs, this.mainGoFile, hackedCodePreviousVal)
         }
@@ -432,7 +432,7 @@ export class ActionRun extends Action<{ fb: VirtualFileBrowser, folderOrFilePath
         // Reset DOM in case it was modified
         for (let i = 0; i < document.body.children.length; i++) {
             let child = document.body.children[i]
-            if (child.id != "sgp-root") {
+            if (child.id !== "sgp-root") {
                 child.remove()
             }
         }

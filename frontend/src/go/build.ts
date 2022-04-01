@@ -59,7 +59,7 @@ export const goBuild = async (fs: any, sourcePath: string, outputExePath: string
     // console.log("Read commands file:", commandsJson)
     let commandsArray = JSON.parse(new TextDecoder("utf-8").decode(commandsJson))
     // Execute all compile and link commands to generate a.out
-    let success = await performBuildInternal(fs, commandsArray, buildFilesTmpDir, buildEnv, progress);
+    let success = await performBuildInternal(fs, commandsArray, buildFilesTmpDir, buildEnv, progress)
     if (success) {
         // Move executable to wanted location
         await fs.rename(buildFilesTmpDir + "/a.out", outputExePath)

@@ -1,8 +1,8 @@
 // Compiling once mitigates performance problems of Function
 import {BUILD_HACK_STOP_FN_ENV_VAR_NAME} from "../filebrowser/action"
 import {readCache} from "../fs/utils"
+import {hiddenGlobals} from "./globals"
 import {getProcessForFS} from "./process"
-import {hiddenGlobals} from "./globals";
 
 // @ts-ignore
 const parsedWasmExecJs = import("bundle-text:./wasm_exec.js.gen").then(wasmExecJsCode => Function("global", wasmExecJsCode as string))
@@ -14,7 +14,7 @@ export const defaultGoEnv = {
 export const goClassWithVFS = async (fs: any, globalHack: any): Promise<any> => {
     // HACK: Dynamically prepare wasm_exec.js each time with the given filesystem
     // Shared globals
-    for (let windowKey in window) {
+    for (const windowKey of Object.keys(window)) { // https://stackoverflow.com/a/45959874
         globalHack[windowKey] = window[windowKey]
     }
     for (let windowKey of hiddenGlobals) {
@@ -26,7 +26,7 @@ export const goClassWithVFS = async (fs: any, globalHack: any): Promise<any> => 
     // globalHack.Buffer = fs.Buffer
     let wasmExecJsFunc = await parsedWasmExecJs
     wasmExecJsFunc(globalHack)
-    return globalHack.Go;
+    return globalHack.Go
 }
 
 export const goRun = (fs: any, fsUrl: string, argv: string[] = [], cwd = "/", env: { [key: string]: string } = defaultGoEnv):
@@ -34,14 +34,14 @@ export const goRun = (fs: any, fsUrl: string, argv: string[] = [], cwd = "/", en
     let cssLog = "background: #222; color: #bada55"
     console.log("%c>>>>> runGoExe:", cssLog, fsUrl, argv, {cwd}, env)
     fs.chdir(cwd)
-    const stopFnName = "stopFnGoHack" + Math.floor(Math.random() * 1000000000);
+    const stopFnName = "stopFnGoHack" + Math.floor(Math.random() * 1000000000)
     let globalHack: any = {} // <-- Fake global variable (only for the current context)
     return {
         runPromise: ((async (): Promise<number> => {
-            let go: any;
+            let go: any
             try {
                 // Build an instance the modified Go class from wasm_exec.js
-                go = new (await goClassWithVFS(fs, globalHack))();
+                go = new (await goClassWithVFS(fs, globalHack))()
                 go.argv = go.argv.concat(argv) // First is the program name, already set
                 env[BUILD_HACK_STOP_FN_ENV_VAR_NAME] = stopFnName
                 go.env = env

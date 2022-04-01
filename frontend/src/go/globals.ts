@@ -806,5 +806,5 @@ export const hiddenGlobals = [
     "webkitSpeechRecognition",
     "webkitSpeechRecognitionError",
     "webkitSpeechRecognitionEvent",
-    "webkitURL",
+    "webkitURL"
 ]
