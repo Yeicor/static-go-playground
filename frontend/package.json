@@ -6,8 +6,8 @@
     "start": "parcel serve --dist-dir ../dist src/index.html",
     "build": "parcel build --dist-dir ../dist --public-url ./ src/index.html",
     "build-wasm_exec": "parcel build --dist-dir ../dist-wasm_exec --public-url ./ src/fs/standalone/wasm_exec.ts",
-    "lint": "tslint -c tslint.json -p tsconfig.json -t stylish",
-    "lint-fix": "tslint --fix -c tslint.json -p tsconfig.json -t stylish"
+    "lint": "eslint",
+    "lint-fix": "eslint --fix"
   },
   "keywords": [
     "Go",
@@ -47,8 +47,8 @@
     "os-browserify": "^0.3.0",
     "parcel": "^2.3.2",
     "stream-browserify": "^3.0.0",
-    "tslint": "^6.1.3",
-    "tslint-config-prettier": "^1.18.0",
+    "eslint": "^8.12.0",
+    "eslint-config-prettier": "^8.5.0",
     "typescript": "^4.1.2",
     "util": "^0.12.4"
   }
