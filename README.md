@@ -8,23 +8,24 @@
 - Full Go Compiler running on the browser: no load for the server & can be deployed easily.
     - Supports using custom build tags.
     - Incremental builds (build cache).
-    - Supports multiple files and packages (including dependencies!).
+    - Supports multiple files and packages (including dependencies).
     - Full cross-compiling support directly from your browser.
 - Full filesystem abstraction (TODO: optionally persistent) for both the compiler and running programs.
-    - TODO: Download a standalone wasm_exec.js with filesystem support.
+    - A standalone wasm_exec.js with filesystem support is available.
 - Full DOM access for running programs (and basic stdout/stderr for now).
 - Browser-based code editor ([Ace](https://ace.c9.io/)).
 
-## Use it to provide hackable examples for your Go project!
+## Provide easy-setup, editable demos for your projects
 
 TODO: instructions and demo
 
 ## Go Compiler on browser
 
-This project builds the Go Compiler to WASM and provides enough abstractions, fixes and hacks for it to be able to build
-executables (for any platform) from the web. It also runs the compiled code, with the same features available.
+This project builds the Go Compiler to WebAssembly and provides enough abstractions, fixes and hacks for it to be able
+to build executables (for any platform) from the web. It also runs the compiled code (if the target arch is js/wasm),
+with the same features available.
 
-The result is a static website that can compile and run *most* Go code (see Known limitations below) from the client's
+The result is a static website that can compile and run *most* Go code (see known limitations below) from the client's
 browser.
 
 Why? To learn how the Go compiler works and to provide better (hackable) demos for most Go projects with easy
@@ -54,7 +55,11 @@ Dependencies:
 Just run `make`: it will output a static site to `dist/` that can be uploaded to any web server. To learn how it works,
 start by looking at the [Makefile](Makefile).
 
-Alternatively, you can just download the latest [TODO: artifact.zip].
+To generate the modified wasm_exec.js, run `make wasm_exec`.
+
+Alternatively, you can just download them from the automatic workflow build artifacts:
+[dist.zip](https://github.com/Yeicor/static-go-playground/actions/workflows/deploy.yaml)
+and [wasm_exec.zip](https://github.com/Yeicor/static-go-playground/actions/workflows/deploy-wasm_exec.yaml).
 
 ## Known limitations
 
@@ -64,6 +69,7 @@ Alternatively, you can just download the latest [TODO: artifact.zip].
     - Limited network access (available: HTTP client, WebRTC...).
     - Limited persistent storage (can be blocked/deleted by user).
 - Dependencies must be vendored (due to limited network access).
+- Slower than the native compiler.
 
 ## Related projects
 

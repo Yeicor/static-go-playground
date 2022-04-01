@@ -7,6 +7,8 @@ ZIP_COMPRESSION=6
 GOROOT=$(shell go env GOROOT)
 # The output directory (will be created, and its contents will be overwritten)
 DIST=dist
+# The output directory for wasm_exec.js, if built (will be created, and its contents will be overwritten)
+DIST_WASM_EXEC=dist-wasm_exec
 
 all: fs wasm-opt static fs-zip frontend-prod # Prepares a static server at ${DIST}/
 
@@ -14,9 +16,9 @@ frontend-prod: # Build the frontend
 	myYarn="yarn" && if ! command -v $$myYarn; then export myYarn="npm"; fi && \
 	cd frontend && $$myYarn install && $$myYarn run build
 
-static: wasm-exec # Prepare and copy other static files for the website (not handled by frontend builder)
+static: wasm_exec # Prepare and copy other static files for the website (not handled by frontend builder)
 
-wasm-exec: # Copy the original wasm_exec.js (with minimal fixes for bundling) from the compiled distribution
+wasm_exec: # Copy the original wasm_exec.js (with minimal fixes for bundling) from the compiled distribution
 	sed -E 's/require\(/global.require\(/g; s/([^.])process/\1global.process/g; s/([^.])fs([\w.])/\1global.fs\2/g; s/\(code\) => \{/(code) => {this.exit_code=code;/' \
 		"${GOROOT}/misc/wasm/wasm_exec.js" >"frontend/src/go/wasm_exec.js.gen"
 
@@ -111,3 +113,13 @@ wasm-opt: fs # OPTIONAL: Optimizes all wasm files in ${DIST}/
 	find "$(CURDIR)/${DIST}/" -type f -print -exec file {} \; | grep WebAssembly | sed 's/:[^:]*//g' | \
 	tr '\n' '\0' | xargs -0 -I {} /usr/bin/env bash -c "echo 'Optimizing {}...' && \
 	wasm-opt -O4 -o '{}.opt' '{}' && mv '{}.opt' '{}'" || echo "wasm-opt disabled, not found or failed and will be skipped"
+
+wasm_exec: # Builds the standalone wasm_exec.js with filesystem support (not needed if building the main app)
+	mkdir -p ${DIST_WASM_EXEC}
+	# Copy the minimally modified index.html
+	cp "frontend/src/fs/standalone/index.html" "${DIST_WASM_EXEC}/index.html"
+	# Compile the demo code for js/wasm
+	GOOS=js GOARCH=wasm go build -o "${DIST_WASM_EXEC}/test.wasm" "frontend/src/fs/standalone/demo.go"
+	# Build the modified wasm_exec.js
+	myYarn="yarn" && if ! command -v $$myYarn; then export myYarn="npm"; fi && \
+	cd frontend && $$myYarn install && $$myYarn run build-wasm_exec

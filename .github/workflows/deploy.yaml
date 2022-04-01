@@ -1,4 +1,4 @@
-name: Build
+name: Build Go Compiler and frontend
 on:
   push:
     branches:
@@ -9,12 +9,12 @@ jobs:
     strategy:
       matrix:
         go: [ '1.17' ] # TODO: More Go versions
-    name: Build Go ${{ matrix.go }}
+    name: Build Go Compiler and frontend (Go ${{ matrix.go }})
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Setup dependencies
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
       - uses: actions/setup-node@v2
@@ -29,25 +29,7 @@ jobs:
       - name: Build compiler and frontend
         run: make
 
-      - name: Create tarball from production build
-        id: archive
-        run: |
-          set -ex
-          VERSION="$(date +%F)-$(git rev-parse --short "$GITHUB_SHA")"
-          PKGNAME="static-go-playground-$VERSION"
-          TARBALL="$PKGNAME.tar.gz"
-          SHASUM="$PKGNAME.tar.gz.sha256"
-          cd dist/ && tar -czf "../$TARBALL" . && cd ..
-          cmake -E sha256sum $TARBALL > $SHASUM
-          echo "::set-output name=tarball::$TARBALL"
-          echo "::set-output name=shasum::$SHASUM"
-
-      - name: Upload tarball as draft release
-        uses: softprops/action-gh-release@v1
+      - uses: actions/upload-artifact@v3
         with:
-          name: "Production builds"
-          body: "Draft release which collects all recent production builds."
-          draft: true
-          files: |
-            ${{ steps.archive.outputs.tarball }}
-            ${{ steps.archive.outputs.shasum }}
+          name: dist-go${{ matrix.go }}
+          path: dist/

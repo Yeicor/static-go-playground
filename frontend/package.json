@@ -5,6 +5,7 @@
   "scripts": {
     "start": "parcel serve --dist-dir ../dist src/index.html",
     "build": "parcel build --dist-dir ../dist src/index.html",
+    "build-wasmexec": "parcel build --dist-dir ../dist-wasmexec src/fs/standalone/wasm_exec.ts",
     "lint": "tslint -c tslint.json -p tsconfig.json -t stylish",
     "lint-fix": "tslint --fix -c tslint.json -p tsconfig.json -t stylish"
   },

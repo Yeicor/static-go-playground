@@ -10,13 +10,9 @@ export const defaultGoEnv = {
     "GOROOT": "/usr/lib/go"
     // "GOPATH": "/doesNotExist"
 }
-export const goRun = (fs: any, fsUrl: string, argv: string[] = [], cwd = "/", env: { [key: string]: string } = defaultGoEnv):
-    { runPromise: Promise<number>; forceStop: () => Promise<void> } => {
-    let cssLog = "background: #222; color: #bada55"
-    console.log("%c>>>>> runGoExe:", cssLog, fsUrl, argv, {cwd}, env)
-    fs.chdir(cwd)
+
+export const goClassWithVFS = async (fs: any, globalHack: any): Promise<any> => {
     // HACK: Dynamically prepare wasm_exec.js each time with the given filesystem
-    let globalHack: any = {} // <-- Fake global variable (only for the current context)
     // Shared globals
     for (let windowKey in window) {
         globalHack[windowKey] = window[windowKey]
@@ -28,25 +24,36 @@ export const goRun = (fs: any, fsUrl: string, argv: string[] = [], cwd = "/", en
     globalHack.fs = fs
     globalHack.process = getProcessForFS(fs)
     // globalHack.Buffer = fs.Buffer
-    const stopFnName = "stopFnGoHack" + Math.floor(Math.random() * 1000000000)
+    let wasmExecJsFunc = await parsedWasmExecJs
+    wasmExecJsFunc(globalHack)
+    return globalHack.Go;
+}
+
+export const goRun = (fs: any, fsUrl: string, argv: string[] = [], cwd = "/", env: { [key: string]: string } = defaultGoEnv):
+    { runPromise: Promise<number>; forceStop: () => Promise<void> } => {
+    let cssLog = "background: #222; color: #bada55"
+    console.log("%c>>>>> runGoExe:", cssLog, fsUrl, argv, {cwd}, env)
+    fs.chdir(cwd)
+    const stopFnName = "stopFnGoHack" + Math.floor(Math.random() * 1000000000);
+    let globalHack: any = {} // <-- Fake global variable (only for the current context)
     return {
         runPromise: ((async (): Promise<number> => {
-            let wasmExecJsFunc = await parsedWasmExecJs
-            wasmExecJsFunc(globalHack)
-            const go = new globalHack.Go()
+            let go: any;
             try {
-                // Read from virtual FS (should be very fast and not benefit from streaming compilation)
-                let wasmBytes = await readCache(fs, fsUrl)
-                let tmp = await WebAssembly.instantiate(wasmBytes, go.importObject)
+                // Build an instance the modified Go class from wasm_exec.js
+                go = new (await goClassWithVFS(fs, globalHack))();
                 go.argv = go.argv.concat(argv) // First is the program name, already set
                 env[BUILD_HACK_STOP_FN_ENV_VAR_NAME] = stopFnName
                 go.env = env
+                // Read from virtual FS (should be very fast and not benefit from streaming compilation)
+                let wasmBytes = await readCache(fs, fsUrl)
+                let tmp = await WebAssembly.instantiate(wasmBytes, go.importObject)
                 await go.run(tmp.instance)
             } catch (e) {
                 console.error("%c>>>>> runGoExe:", cssLog, e)
             }
             delete globalHack[stopFnName]
-            return go.exit_code !== 0 && !go.exit_code ? -1 : go.exit_code
+            return go?.exit_code !== 0 && !go?.exit_code ? -1 : go?.exit_code
         })()),
         forceStop: async () => {
             if (globalHack[stopFnName]) {
