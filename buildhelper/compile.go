@@ -15,7 +15,7 @@ func compile(t *parsedTreeNode, buildDir string, precompiledInternal bool, build
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	commands, linkPackages, err := compileRecursive(t, true, importCfg, buildDir, nil, nil, buildCtx, map[*parsedTreeNode]struct{}{})
+	commands, linkPackages, err := compileRecursive(t, true, importCfg, buildDir, buildCtx, map[*parsedTreeNode]struct{}{})
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -42,16 +42,23 @@ func compile(t *parsedTreeNode, buildDir string, precompiledInternal bool, build
 
 // compileRecursive compiles generates all compile commands based on the parsed tree structure.
 // It ensures that all dependencies are already compiled before compiling the current package.
-func compileRecursive(node *parsedTreeNode, isRoot bool, cfg *os.File, buildDir string, commands [][]string, linkPackages []string, buildCtx build.Context, alreadyCompiled map[*parsedTreeNode]struct{}) ([][]string, []string, error) {
+func compileRecursive(node *parsedTreeNode, isRoot bool, cfg *os.File, buildDir string, buildCtx build.Context, alreadyCompiled map[*parsedTreeNode]struct{}) ([][]string, []string, error) {
 	// Check if it was already compiled (more than one node depends on this package, and it was already processed) and skip
 	if _, ok := alreadyCompiled[node]; ok {
-		return commands, linkPackages, nil
+		return nil, nil, nil
 	}
 	alreadyCompiled[node] = struct{}{}
 
 	// Recurse into dependencies
+	var commands [][]string
+	var linkPackages []string
 	for _, dep := range node.imports {
-		commands, linkPackages, _ = compileRecursive(dep, false, cfg, buildDir, commands, linkPackages, buildCtx, alreadyCompiled)
+		commandsDep, linkPackagesDep, err := compileRecursive(dep, false, cfg, buildDir, buildCtx, alreadyCompiled)
+		if err != nil {
+			return nil, nil, err
+		}
+		commands = append(commands, commandsDep...)
+		linkPackages = append(linkPackages, linkPackagesDep...)
 	}
 
 	// Check if the package is already cached and register it

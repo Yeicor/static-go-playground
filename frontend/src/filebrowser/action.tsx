@@ -339,8 +339,10 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
         if (this.props.fb.props.getBuildTags) buildTags = this.props.fb.props.getBuildTags()
         let buildTarget = ["js", "wasm"]
         if (this.props.fb.props.getBuildTarget) buildTarget = this.props.fb.props.getBuildTarget()
+        let buildTargetIsJsWasm = buildTarget === ["js", "wasm"]
         let hackedCodePreviousVal: Uint8Array
-        if (this.props.fb.props.getBuildInjectStopCode && this.mainGoFile && this.props.fb.props.getBuildInjectStopCode()) {
+        if (this.props.fb.props.getBuildInjectStopCode && this.mainGoFile && buildTargetIsJsWasm &&
+            this.props.fb.props.getBuildInjectStopCode()) {
             // HACK: Inject stop code to be able to stop forever-running Go executables.
             // It spawns an initialization goroutine that sets up a global stop function with a given name that can be called from JS
             let codeBytes = await readCache(this.props.fb.props.fs, this.mainGoFile)
@@ -381,7 +383,7 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
         if (success) {
             // Run after build if configured
             let runAfterBuild = false
-            if (this.props.fb.props.getBuildRun) runAfterBuild = this.props.fb.props.getBuildRun()
+            if (this.props.fb.props.getBuildRun && buildTargetIsJsWasm) runAfterBuild = this.props.fb.props.getBuildRun()
             if (runAfterBuild) {
                 await new ActionRun({...this.props, folderOrFilePath: outFile, isDir: false}, {}).onClick()
             }

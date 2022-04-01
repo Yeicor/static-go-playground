@@ -12,8 +12,7 @@ func main() {
 	if len(os.Args) != 4 {
 		log.Fatal("Usage: ", os.Args[0], " <input-go-package> <output-dir> <build-tag1,build-tag2>\n"+
 			"Environment variables:\n"+
-			" - ALSO_EXECUTE_COMMANDS: if set, executes all command after generating them to build the executable\n"+
-			" - PRECOMPILED_STD: if set, tries to use the precompiled standard library from GOROOT instead of building it again\n")
+			" - ALSO_EXECUTE_COMMANDS: if set, executes all command after generating them to build the executable\n")
 	}
 	Run(os.Args[1], os.Args[2], strings.Split(os.Args[3], ","))
 }

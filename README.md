@@ -66,7 +66,7 @@ because the source code of the standard library is downloaded and used for any o
 
 You can download production builds from the [releases](https://github.com/Yeicor/static-go-playground/releases) or the
 latest workflow artifacts:
-[dist.zip](https://github.com/Yeicor/static-go-playground/actions/workflows/deploy.yaml)
+[dist.zip](https://github.com/Yeicor/static-go-playground/actions/workflows/pages/pages-build-deployment)
 and [wasm_exec.zip](https://github.com/Yeicor/static-go-playground/actions/workflows/deploy-wasm_exec.yaml).
 
 ### Building from source
