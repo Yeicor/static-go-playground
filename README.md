@@ -15,9 +15,27 @@
 - Full DOM access for running programs (and basic stdout/stderr for now).
 - Browser-based code editor ([Ace](https://ace.c9.io/)).
 
-## Provide easy-setup, editable demos for your projects
+## [Try it out!](https://Yeicor.github.io/static-go-playground/)
 
-TODO: instructions and demo
+Compiling and running examples from [Ebiten](https://ebiten.org):
+
+![Go Playground demo](docs/demo-ebiten.gif)
+
+Compiling and running modified examples:
+
+![Go Playground editor demo](docs/demo-ebiten-editor.png)
+
+### Provide editable demos for your projects
+
+You just need to upload a zip of the sources for your project after running `go mod vendor` (maybe as part of your CI
+process). Then send your users to https://Yeicor.github.io/static-go-playground/. You can automate the app's
+initialization process with GET query parameters (TODO):
+
+- fs_download_\<path>=\<url> - downloads \<url> (must be a .zip), and extracts its contents at \<path>. Can be applied
+  multiple times.
+- run=\<path> - runs the program at \<path> after fully loading.
+
+<!-- TODO: Example for SDFX-UI -->
 
 ## Go Compiler on browser
 
@@ -42,9 +60,16 @@ There are 2 approaches to handle the standard library:
   time (this happens automatically for all packages with unmodified sources).
 
 A mix of both was applied: the precompiled standard library for js/wasm is downloaded. Cross-compiling is also possible
-because the source code of the standard library is also downloaded, which is used for any other OS/arch.
+because the source code of the standard library is downloaded and used for any other OS/arch.
 
-## Building from source / development
+## Builds
+
+You can download production builds from the [releases](https://github.com/Yeicor/static-go-playground/releases) or the
+latest workflow artifacts:
+[dist.zip](https://github.com/Yeicor/static-go-playground/actions/workflows/deploy.yaml)
+and [wasm_exec.zip](https://github.com/Yeicor/static-go-playground/actions/workflows/deploy-wasm_exec.yaml).
+
+### Building from source
 
 Dependencies:
 
@@ -57,10 +82,6 @@ start by looking at the [Makefile](Makefile).
 
 To generate the modified wasm_exec.js, run `make wasm_exec`.
 
-Alternatively, you can just download them from the automatic workflow build artifacts:
-[dist.zip](https://github.com/Yeicor/static-go-playground/actions/workflows/deploy.yaml)
-and [wasm_exec.zip](https://github.com/Yeicor/static-go-playground/actions/workflows/deploy-wasm_exec.yaml).
-
 ## Known limitations
 
 - Limitations of building on `js/wasm`:
@@ -69,7 +90,7 @@ and [wasm_exec.zip](https://github.com/Yeicor/static-go-playground/actions/workf
     - Limited network access (available: HTTP client, WebRTC...).
     - Limited persistent storage (can be blocked/deleted by user).
 - Dependencies must be vendored (due to limited network access).
-- Slower than the native compiler.
+- Slower than the native compiler, and may run out of memory for large projects.
 
 ## Related projects
 
