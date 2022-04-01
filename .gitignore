@@ -3,4 +3,4 @@
 
 # Final build files
 /dist/
-/dist-wasmexec/
+/dist-wasm_exec/
