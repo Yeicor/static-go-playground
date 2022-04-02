@@ -5,7 +5,7 @@ import {hiddenGlobals} from "./globals"
 import {getProcessForFS} from "./process"
 
 // @ts-ignore
-const parsedWasmExecJs = import("bundle-text:./wasm_exec.js.gen").then(wasmExecJsCode => Function("global", wasmExecJsCode as string))
+const parsedWasmExecJs = import("bundle-text:./wasm_exec.js.gen").then(wasmExecJsCode => Function("global", "globalThis", wasmExecJsCode as string))
 export const defaultGoEnv = {
     "GOROOT": "/usr/lib/go"
     // "GOPATH": "/doesNotExist"
@@ -25,7 +25,8 @@ export const goClassWithVFS = async (fs: any, globalHack: any): Promise<any> => 
     globalHack.process = getProcessForFS(fs)
     // globalHack.Buffer = fs.Buffer
     let wasmExecJsFunc = await parsedWasmExecJs
-    wasmExecJsFunc(globalHack)
+    // Need 2 different variables as Go 1.18 started using globalThis instead of global
+    wasmExecJsFunc(globalHack, globalHack)
     return globalHack.Go
 }
 

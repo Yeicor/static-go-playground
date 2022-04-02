@@ -9,7 +9,8 @@ const initialFilesystemZipUrl = "fs.zip"
 const initialFilesystemZipDownloadProgress = 1 / 2
 
 async function installZip(progressHandler: (p: number) => Promise<void>, fs: any, dlUrl: string, extractAt: string) {
-    await fetch(dlUrl, {}).then(fetchProgress({
+    let fetchResp = await fetch(dlUrl);
+    let fetchProgressInterceptor = fetchProgress({
         onProgress: async (progress) => {
             if (progress.total) {
                 let actualP = progress.transferred / progress.total * initialFilesystemZipDownloadProgress
@@ -19,13 +20,13 @@ async function installZip(progressHandler: (p: number) => Promise<void>, fs: any
         onError: (err) => {
             alert("Failed to download the filesystem (from " + initialFilesystemZipUrl + "), check your setup. Error: " + err)
         }
-    })).then(async fsResp => {
-        let initialFsZipBuf = (await fsResp.arrayBuffer()) as Uint8Array
-        await progressHandler(initialFilesystemZipDownloadProgress)
-        await importZip(fs, initialFsZipBuf, extractAt, async p => {
-            let actualP = initialFilesystemZipDownloadProgress + p * (1 - initialFilesystemZipDownloadProgress)
-            await progressHandler(actualP)
-        })
+    })
+    fetchResp = await fetchProgressInterceptor(fetchResp); // Will buffer the whole body now, instead of on the next line
+    let initialFsZipBuf = (await fetchResp.arrayBuffer()) as Uint8Array
+    await progressHandler(initialFilesystemZipDownloadProgress)
+    await importZip(fs, initialFsZipBuf, extractAt, async p => {
+        let actualP = initialFilesystemZipDownloadProgress + p * (1 - initialFilesystemZipDownloadProgress)
+        await progressHandler(actualP)
     })
 }
 

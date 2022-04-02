@@ -5,11 +5,13 @@
 
 ## Features
 
-- Full Go Compiler running on the browser: no load for the server & can be deployed easily.
+- Full Go Compiler running on the browser.
     - Supports using custom build tags.
     - Incremental builds (build cache).
     - Supports multiple files and packages (including dependencies).
     - Full cross-compiling support directly from your browser.
+    - No need for a server backend to compile programs.
+    - Easy deployment (just upload the generated files).
 - Full filesystem abstraction for both the compiler and running programs.
     - A standalone wasm_exec.js with filesystem support is available.
 - Full DOM access for running programs (and basic stdout/stderr for now).
@@ -25,15 +27,32 @@ Compiling and running modified examples:
 
 ![Go Playground editor demo](docs/demo-ebiten-editor.png)
 
-### Use this to provide editable demos for your projects!
+Use this to provide editable demos for your projects!
 
-You just need to upload a zip of the sources for your project after running `go mod vendor` (maybe as part of your CI
-process). Take a look at [setup.ts](frontend/src/go/setup.ts) for more information on automatically loading your project
-on startup. For example:
+### Instructions
 
-<!-- TODO: Example for SDFX-UI -->
+1. Run `go mod vendor` on your [Go Module](https://go.dev/blog/using-go-modules) root.
+2. Zip the project and upload it anywhere.
+    1. Check that there are no [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) errors.
+3. Publish the URL that automatically loads and builds your project.
+    1. Take a look at [setup.ts](frontend/src/go/setup.ts) for more information on startup automation.
+    2. For example, to download a zip file at the given location and extract it to /src, and then build and run the
+       example at /src/example/demo
+       use [this](https://yeicor.github.io/static-go-playground/?fs_dl_/src=http://example.com/sources-with-vendor.zip&build=/src/example/demo)
+       URL.
 
-## Go Compiler on browser
+You may use [CI](https://en.wikipedia.org/wiki/Continuous_integration) to perform these steps automatically with a
+script similar to:
+
+```shell
+cd <project-root>
+go mod vendor
+zip -r <project-name>.zip .
+<upload> <project-name>.zip
+<update-published-url>
+```
+
+## How does it work?
 
 This project builds the Go Compiler to WebAssembly and provides enough abstractions, fixes and hacks for it to be able
 to build executables (for any platform) from the web. It also runs the compiled code (if the target arch is js/wasm),
