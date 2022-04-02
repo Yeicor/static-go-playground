@@ -70,7 +70,7 @@ cmd-buildhelper: bootstrap-go-pkg-toolchain # Custom reimplementation of the go 
 	export BUILD_DIR="buildhelper" && \
 	export OUT_DIR="${DIST}/fs/usr/lib/go/bin" && \
 	mkdir -p "$$OUT_DIR" && \
-	cd "$$BUILD_DIR" && GOOS=js GOARCH=wasm go mod tidy && GOOS=js GOARCH=wasm $$GOROOT/bin/go build -ldflags="-X 'package_path.variable_name=new_value'" -trimpath -o "$(CURDIR)/$$OUT_DIR/buildhelper" -v .
+	cd "$$BUILD_DIR" && GOOS=js GOARCH=wasm $$GOROOT/bin/go build -ldflags="-X 'package_path.variable_name=new_value'" -trimpath -o "$(CURDIR)/$$OUT_DIR/buildhelper" -v .
 
 cmd-compile: bootstrap-go-pkg-toolchain # Builds compile command (for lower level go build)
 	export GOROOT="$(CURDIR)/${DIST}/go-js-wasm-bootstrap" && \
