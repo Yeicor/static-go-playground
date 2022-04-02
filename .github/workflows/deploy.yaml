@@ -23,6 +23,7 @@ jobs:
         with:
           node-version: '16'
           cache: 'yarn'
+          cache-dependency-path: frontend/yarn.lock
       - name: Install binaryen (wasm-opt tool)
         if: ${{ matrix.go == '1.17' }} # Only optimize the builds on latest Go (takes a while)
         run: |
