@@ -10,7 +10,7 @@
     - Incremental builds (build cache).
     - Supports multiple files and packages (including dependencies).
     - Full cross-compiling support directly from your browser.
-    - No need for a server backend to compile programs.
+    - No need for a server backend to build executables.
     - Easy deployment (just upload the generated files).
 - Full filesystem abstraction for both the compiler and running programs.
     - A standalone wasm_exec.js with filesystem support is available.
@@ -55,8 +55,10 @@ zip -r <project-name>.zip .
 ## How does it work?
 
 This project builds the Go Compiler to WebAssembly and provides enough abstractions, fixes and hacks for it to be able
-to build executables (for any platform) from the web. It also runs the compiled code (if the target arch is js/wasm),
-with the same features available.
+to build executables (for any platform) from the web. The main added abstraction is a virtual file system implementation
+that works in memory (based on [virtualfs](https://www.npmjs.com/package/virtualfs)), which can also be used separately
+with a custom wasm_exec.js. The frontend also runs the compiled code (if the target arch is js/wasm), with the same
+features available.
 
 The result is a static website that can compile and run *most* Go code (see known limitations below) from the client's
 browser.
@@ -101,7 +103,7 @@ To only generate the modified wasm_exec.js (already embedded if using the main a
     - No Cgo support.
 - Limitations of running on `js/wasm`:
     - Limited network access (available: HTTP client, WebRTC...).
-    - Limited persistent storage (not implemented but could be blocked/deleted by user).
+    - Limited persistent storage (not implemented yet, could be blocked/deleted by user).
 - Dependencies must be vendored (due to limited network access).
 - Slower than the native compiler, and may run out of memory for large projects.
 
