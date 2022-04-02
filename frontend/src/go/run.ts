@@ -58,6 +58,10 @@ export const goRun = (fs: any, fsUrl: string, argv: string[] = [], cwd = "/", en
         forceStop: async () => {
             if (globalHack[stopFnName]) {
                 globalHack[stopFnName]()
+                // Now asynchronously wait for the code to actually exit
+                while (globalHack[stopFnName]) {
+                    await new Promise(resolve => setTimeout(resolve, 100))
+                }
             } else {
                 console.error("Can't force stop as the executable hasn't set up the global stop function")
             }

@@ -1,8 +1,5 @@
 name: Build wasm_exec.js
-on:
-  push:
-    branches:
-      - main
+on: push
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,8 +17,10 @@ jobs:
       - name: Build wasm_exec.js
         run: make wasm_exec
 
-      - uses: actions/upload-artifact@v3
+      - name: Publish to github pages  # Will also upload the artifact
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          name: wasm_exec
-          path: dist-wasm_exec
-          if-no-files-found: error
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: dist-wasm_exec
+          destination_dir: wasm_exec
+          commit_message: "wasm_exec: ${{ github.event.head_commit.message }}"

@@ -1,6 +1,6 @@
 # Static Go Playground
 
-<!-- TODO: Tags -->
+[![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://mit-license.org/)
 [![Build](https://github.com/Yeicor/static-go-playground/actions/workflows/deploy.yaml/badge.svg)](https://github.com/Yeicor/static-go-playground/actions/workflows/deploy.yaml)
 
 ## Features
@@ -64,10 +64,8 @@ because the source code of the standard library is downloaded and used for any o
 
 ## Builds
 
-You can download production builds from the [releases](https://github.com/Yeicor/static-go-playground/releases) or the
-latest workflow artifacts:
-[dist.zip](https://github.com/Yeicor/static-go-playground/actions/workflows/pages/pages-build-deployment)
-and [wasm_exec.zip](https://github.com/Yeicor/static-go-playground/actions/workflows/deploy-wasm_exec.yaml).
+You can download production builds from the [releases](https://github.com/Yeicor/static-go-playground/releases) or the 
+[github pages branch](https://github.com/Yeicor/static-go-playground/tree/gh-pages).
 
 ### Building from source
 
@@ -80,7 +78,7 @@ Dependencies:
 Just run `make`: it will output a static site to `dist/` that can be uploaded to any web server. To learn how it works,
 start by looking at the [Makefile](Makefile).
 
-To generate the modified wasm_exec.js, run `make wasm_exec`.
+To only generate the modified wasm_exec.js (already embedded if using the main app), run `make wasm_exec`.
 
 ## Known limitations
 

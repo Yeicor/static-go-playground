@@ -19,6 +19,8 @@ const performBuildInternal = async (fs: any, commands: string[][], cwd: string,
             return false
         }
         if (progress) await progress(goBuildParsingProgress + (1 - goBuildParsingProgress) * (i + 1) / numCommands)
+        // Breathe: lets the browser render a frame between commands (and other tasks run)
+        await new Promise(resolve => setTimeout(resolve, 0))
     }
     return true
 }
@@ -54,6 +56,8 @@ export const goBuild = async (fs: any, sourcePath: string, outputExePath: string
         return false
     }
     if (progress) await progress(goBuildParsingProgress)
+    // Breathe: lets the browser render a frame between commands (and other tasks run)
+    await new Promise(resolve => setTimeout(resolve, 0))
     // Read generated commands
     let commandsJson = await readCache(fs, buildFilesTmpDir + "/commands.json")
     // console.log("Read commands file:", commandsJson)

@@ -186,13 +186,13 @@ export class ActionFolderUploadZip extends Action<{ fb: VirtualFileBrowser, fold
     }
 
     onClick = () => {
-        console.log("Click", this.inputRef)
+        // console.log("Click", this.inputRef)
         this.inputRef.current.value = "" // Reset to fire if selecting the same file
         this.inputRef.current.click()
     }
 
-    onFileSelected = (evt) => {
-        console.log("Reading zip files to memory...", evt)
+    onFileSelected = () => {
+        // console.log("Reading zip files to memory...", evt)
         let fs = this.props.fb.props.fs
         for (let i = 0; i < this.inputRef.current.files.length; i++) {
             let zipFile = this.inputRef.current.files[i]
@@ -205,7 +205,7 @@ export class ActionFolderUploadZip extends Action<{ fb: VirtualFileBrowser, fold
                 if (!extractAt.endsWith("/")) {
                     extractAt += "/"
                 }
-                console.log("Extracting source zip to " + extractAt + "... length: ", zipBytes.length)
+                // console.log("Extracting source zip to " + extractAt + "... length: ", zipBytes.length)
                 await importZip(fs, zipBytes, extractAt, this.props.fb.props.setProgress)
                 // Refresh file count of folder (and possibly actions available)
                 await this.props.fb.refreshFilesCwd()
@@ -339,7 +339,7 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
         if (this.props.fb.props.getBuildTags) buildTags = this.props.fb.props.getBuildTags()
         let buildTarget = ["js", "wasm"]
         if (this.props.fb.props.getBuildTarget) buildTarget = this.props.fb.props.getBuildTarget()
-        let buildTargetIsJsWasm = buildTarget === ["js", "wasm"]
+        let buildTargetIsJsWasm = buildTarget.join("/") === "js/wasm"
         let hackedCodePreviousVal: Uint8Array
         if (this.props.fb.props.getBuildInjectStopCode && this.mainGoFile && buildTargetIsJsWasm &&
             this.props.fb.props.getBuildInjectStopCode()) {
@@ -355,14 +355,14 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
             let packageMainLength = code.substring(packageMainStart).indexOf("\n") + 2
             let packageMainEnd = packageMainStart + packageMainLength
             code = code.substring(0, packageMainEnd) + `import (
-                hackFmt23894589 "fmt"
+                // hackFmt23894589 "fmt"
                 hackOs23894589 "os"
                 hackRuntime23894589 "runtime"
                 hackJs23894589 "syscall/js"
             )\n` + code.substring(packageMainEnd) + `\nfunc init() {
                 if hackRuntime23894589.GOOS == "js" {
                     jsGlobalStopFnName := hackOs23894589.Getenv("` + BUILD_HACK_STOP_FN_ENV_VAR_NAME + `")
-                    hackFmt23894589.Println("Setting global function to force stop at", jsGlobalStopFnName)
+                    // hackFmt23894589.Println("Setting global function to force stop at", jsGlobalStopFnName)
                     if jsGlobalStopFnName != "" {
                         hackJs23894589.Global().Set(jsGlobalStopFnName, hackJs23894589.FuncOf(func (this hackJs23894589.Value, args []hackJs23894589.Value) interface{} {
                             hackOs23894589.Exit(195) // Forces exit: set a custom exit code
@@ -431,13 +431,19 @@ export class ActionRun extends Action<{ fb: VirtualFileBrowser, folderOrFilePath
     }
 
     onClick = async () => {
-        // Reset DOM in case it was modified
-        for (let i = 0; i < document.body.children.length; i++) {
-            let child = document.body.children[i]
-            if (child.id !== "sgp-root") {
-                child.remove()
+        while (document.body.children.length > 1) {
+            // Reset DOM in case it was modified
+            for (let i = 0; i < document.body.children.length; i++) {
+                let child = document.body.children[i]
+                if (child.id !== "sgp-root") {
+                    child.remove()
+                }
             }
+            console.log("Waiting for DOM to update...")
+            // Make sure the DOM is fully updated before executing (will retry if not)
+            await new Promise(resolve => setTimeout(resolve, 100))
         }
+
         // Start the execution
         let fs = this.props.fb.props.fs
         let exePath = this.getExePath()
@@ -450,8 +456,6 @@ export class ActionRun extends Action<{ fb: VirtualFileBrowser, folderOrFilePath
             let prevStopFn = this.props.fb.props.setRunStopFn(goRunSetup.forceStop)
             if (prevStopFn) {
                 await prevStopFn() // Wait for previous process to stop if pressing run twice
-                // FIXME: Make sure it finished properly (to avoid overwriting the stop function and leaving next run executing)
-                await new Promise(resolve => setTimeout(resolve, 1000))
                 this.props.fb.props.setRunStopFn(goRunSetup.forceStop)
             }
         }
