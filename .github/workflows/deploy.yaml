@@ -22,6 +22,7 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '16'
+          cache: 'yarn'
       - name: Install binaryen (wasm-opt tool)
         if: ${{ matrix.go == '1.17' }} # Only optimize the builds on latest Go (takes a while)
         run: |

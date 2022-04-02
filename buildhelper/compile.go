@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"go/build"
-	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -22,7 +21,7 @@ func compile(t *parsedTreeNode, buildDir string, precompiledInternal bool, build
 	if precompiledInternal {
 		// Add all standard (precompiled) library packs to importCfg
 		pkgPath := goPkgPath(buildCtx)
-		err = filepath.Walk(pkgPath, func(path string, info fs.FileInfo, err error) error {
+		err = filepath.Walk(pkgPath, func(path string, info os.FileInfo, err error) error {
 			if strings.HasSuffix(path, ".a") {
 				importPath := strings.Replace(path[:len(path)-2], pkgPath+"/", "", 1)
 				importPath = strings.Replace(importPath, "\\", "/", -1) // Just in case we are on Windows...
