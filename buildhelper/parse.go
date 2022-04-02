@@ -98,11 +98,15 @@ func parseRecursive(fset *token.FileSet, pkgDirOrFile, impPath, buildDir, tmpBui
 		}
 	}
 	// Add all assembly files in dir as source (will be filtered by os/arch later)
-	dir, err := os.ReadDir(pkgDir)
+	dir, err := os.Open(pkgDir)
 	if err != nil {
 		return nil, err
 	}
-	for _, entry := range dir {
+	dirEntries, err := dir.Readdir(-1)
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range dirEntries {
 		if strings.HasSuffix(strings.ToLower(entry.Name()), ".s") {
 			pkg.Files[filepath.Join(pkgDir, entry.Name())] = &ast.File{}
 		}
@@ -299,16 +303,16 @@ func checkPrecompiledCache(buildDir string, importPath string, sourcesPath strin
 	}
 	// Now, check that all files in sourcesPath are older than the latest built file
 	cacheDate := stat.ModTime()
-	dir, err := os.ReadDir(sourcesPath)
+	dir, err := os.Open(sourcesPath)
 	if err != nil {
 		return ""
 	}
-	for _, entry := range dir {
-		info, err := entry.Info()
-		if err != nil {
-			continue // Skip
-		}
-		if info.ModTime().After(cacheDate) {
+	dirEntries, err := dir.Readdir(-1)
+	if err != nil {
+		return ""
+	}
+	for _, entry := range dirEntries {
+		if entry.ModTime().After(cacheDate) {
 			return "" // Cache is invalid for this file (source modified)
 		}
 	}
