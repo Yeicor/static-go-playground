@@ -1,0 +1,47 @@
+<!doctype html>
+<!--
+Copyright 2018 The Go Authors. All rights reserved.
+Use of this source code is governed by a BSD-style
+license that can be found in the LICENSE file.
+-->
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Go wasm</title>
+</head>
+
+<body>
+<!--
+Add the following polyfill for Microsoft Edge 17/18 support:
+<script src="https://cdn.jsdelivr.net/npm/text-encoding@0.7.0/lib/encoding.min.js"></script>
+(see https://caniuse.com/#feat=textencoder)
+-->
+<!--suppress HtmlUnknownTarget -->
+<script src="wasm_exec.js"></script>
+<!--suppress JSUnresolvedFunction, JSValidateTypes -->
+<script>
+    if (!WebAssembly.instantiateStreaming) { // polyfill
+        WebAssembly.instantiateStreaming = async (resp, importObject) => {
+            const source = await (await resp).arrayBuffer();
+            return await WebAssembly.instantiate(source, importObject);
+        };
+    }
+
+    async function run() {
+        let fs = openVirtualFS("memory", "fsID") // Same API as the Node fs module
+        fs.mkdirSync("/demo")
+        fs.mkdirSync("/demo/subdir")
+        fs.chdir("/demo/subdir") // Change the working directory to /demo/subdir
+        const go = await Go(fs); // This is the main change w.r.t. the original wasm_exec.js (new => await, fs is optional)
+        let {instance} = await WebAssembly.instantiateStreaming(fetch("test.wasm"), go.importObject)
+        await go.run(instance);
+        closeVirtualFS("fsID") // Forget the virtual FS
+    }
+</script>
+
+<button onClick="run();" id="runButton">Run</button>
+(check the console)
+</body>
+
+</html>
