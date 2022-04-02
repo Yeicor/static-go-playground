@@ -25,15 +25,11 @@ Compiling and running modified examples:
 
 ![Go Playground editor demo](docs/demo-ebiten-editor.png)
 
-### Provide editable demos for your projects
+### Use this to provide editable demos for your projects!
 
 You just need to upload a zip of the sources for your project after running `go mod vendor` (maybe as part of your CI
-process). Then send your users to https://Yeicor.github.io/static-go-playground/. You can automate the app's
-initialization process with GET query parameters (TODO):
-
-- fs_download_\<path>=\<url> - downloads \<url> (must be a .zip), and extracts its contents at \<path>. Can be applied
-  multiple times.
-- run=\<path> - runs the program at \<path> after fully loading.
+process). Take a look at [setup.ts](frontend/src/go/setup.ts) for more information on automatically loading your project
+on startup. For example:
 
 <!-- TODO: Example for SDFX-UI -->
 

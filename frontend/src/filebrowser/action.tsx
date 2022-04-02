@@ -259,10 +259,10 @@ export class ActionDownload extends Action<{ fb: VirtualFileBrowser, folderOrFil
 
 export const BUILD_HACK_STOP_FN_ENV_VAR_NAME = "JS_GLOBAL_STOP_FN"
 
-export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePath: string, isDir: boolean }, { visible: boolean }> {
+export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePath: string, isDir: boolean, progressOverride?: (p: number) => Promise<void> }, { visible: boolean }> {
     mainGoFile?: string
 
-    constructor(props: { fb: VirtualFileBrowser; folderOrFilePath: string; isDir: boolean }, context: any) {
+    constructor(props: { fb: VirtualFileBrowser; folderOrFilePath: string; isDir: boolean, progressOverride?: (p: number) => Promise<void> }, context: any) {
         super(props, context)
         this.state = {visible: false}
         this.setupCheck().then(undefined)
@@ -375,7 +375,8 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
             let codeBytes2 = new TextEncoder().encode(code)
             await writeCache(this.props.fb.props.fs, this.mainGoFile, codeBytes2)
         }
-        let success = await goBuild(fs, buildFile, outFile, buildTags, buildTarget[0], buildTarget[1], {}, this.props.fb.props.setProgress)
+        let success = await goBuild(fs, buildFile, outFile, buildTags, buildTarget[0], buildTarget[1], {},
+            this.props.progressOverride || this.props.fb.props.setProgress)
         if (hackedCodePreviousVal) { // Restore previous code
             await writeCache(this.props.fb.props.fs, this.mainGoFile, hackedCodePreviousVal)
         }
@@ -387,7 +388,8 @@ export class ActionBuild extends Action<{ fb: VirtualFileBrowser, folderOrFilePa
             if (runAfterBuild) {
                 await new ActionRun({...this.props, folderOrFilePath: outFile, isDir: false}, {}).onClick()
             }
-            if (this.props.fb.props.setProgress) await this.props.fb.props.setProgress(-1) // Done
+            if (this.props.progressOverride) await this.props.progressOverride(-1) // Done
+            else if (this.props.fb.props.setProgress) await this.props.fb.props.setProgress(-1) // Done
         }
     }
 }
@@ -431,6 +433,7 @@ export class ActionRun extends Action<{ fb: VirtualFileBrowser, folderOrFilePath
     }
 
     onClick = async () => {
+        // TODO: Use a sandboxed iframe as an alternative to this hack
         while (document.body.children.length > 1) {
             // Reset DOM in case it was modified
             for (let i = 0; i < document.body.children.length; i++) {
@@ -439,7 +442,6 @@ export class ActionRun extends Action<{ fb: VirtualFileBrowser, folderOrFilePath
                     child.remove()
                 }
             }
-            console.log("Waiting for DOM to update...")
             // Make sure the DOM is fully updated before executing (will retry if not)
             await new Promise(resolve => setTimeout(resolve, 100))
         }

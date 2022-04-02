@@ -132,6 +132,7 @@ export const deleteRecursive = async (fs: any, path: string) => {
  * It will overwrite all conflicting files, without deleting anything else in the hierarchy.
  */
 export const importZip = async (fs: any, zipBytes: Uint8Array, extractAt: string, progress?: (p: number) => Promise<any>) => {
+    if (!extractAt.endsWith("/")) extractAt += "/"
     const initialLoadProgress = 0.2
     if (progress) await progress(0)
     const zip = await JSZip.loadAsync(zipBytes)

@@ -41,7 +41,8 @@ export const goRun = (fs: any, fsUrl: string, argv: string[] = [], cwd = "/", en
             let go: any
             try {
                 // Build an instance the modified Go class from wasm_exec.js
-                go = new (await goClassWithVFS(fs, globalHack))()
+                let GoClass = await goClassWithVFS(fs, globalHack);
+                go = new GoClass()
                 go.argv = go.argv.concat(argv) // First is the program name, already set
                 env[BUILD_HACK_STOP_FN_ENV_VAR_NAME] = stopFnName
                 go.env = env
