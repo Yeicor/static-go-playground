@@ -35,6 +35,7 @@ jobs:
         run: make
 
       - name: Write GitHub Pages readme
+        if: ${{ matrix.go == '1.17' }} # Only prepare GitHub pages for latest Go version
         run: |
           cat >dist/README.md <<EOF
           # Production build (${{github.ref_name}})
@@ -47,13 +48,14 @@ jobs:
           The hosted version of the full app is available at https://${GITHUB_REPOSITORY}.github.io/ and the 
           wasm_exec.js standalone demo is available at https://${GITHUB_REPOSITORY}.github.io/wasm_exec/.
           
-          ```
+          \`\`\`
           Date: $(date +%F)
           Git revision: $(git rev-parse HEAD)
-          ```
+          \`\`\`
           EOF
 
       - uses: peaceiris/actions-gh-pages@v3
+        if: ${{ matrix.go == '1.17' }} # Only prepare GitHub pages for latest Go version
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: dist

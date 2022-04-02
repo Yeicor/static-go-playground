@@ -10,7 +10,7 @@
     - Incremental builds (build cache).
     - Supports multiple files and packages (including dependencies).
     - Full cross-compiling support directly from your browser.
-- Full filesystem abstraction (TODO: optionally persistent) for both the compiler and running programs.
+- Full filesystem abstraction for both the compiler and running programs.
     - A standalone wasm_exec.js with filesystem support is available.
 - Full DOM access for running programs (and basic stdout/stderr for now).
 - Browser-based code editor ([Ace](https://ace.c9.io/)).
@@ -64,14 +64,14 @@ because the source code of the standard library is downloaded and used for any o
 
 ## Builds
 
-You can download production builds from the [releases](https://github.com/Yeicor/static-go-playground/releases) or the 
+You can download production builds from the [releases](https://github.com/Yeicor/static-go-playground/releases) or the
 [github pages branch](https://github.com/Yeicor/static-go-playground/tree/gh-pages).
 
 ### Building from source
 
 Dependencies:
 
-- Go Compiler (TODO: minimum version)
+- Go Compiler (Go 1.13 or later)
 - `node` and `npm`/`yarn`
 - Very common UNIX tools.
 
@@ -86,7 +86,7 @@ To only generate the modified wasm_exec.js (already embedded if using the main a
     - No Cgo support.
 - Limitations of running on `js/wasm`:
     - Limited network access (available: HTTP client, WebRTC...).
-    - Limited persistent storage (can be blocked/deleted by user).
+    - Limited persistent storage (not implemented but could be blocked/deleted by user).
 - Dependencies must be vendored (due to limited network access).
 - Slower than the native compiler, and may run out of memory for large projects.
 
