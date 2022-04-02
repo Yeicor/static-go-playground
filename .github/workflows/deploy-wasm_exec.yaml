@@ -17,9 +17,16 @@ jobs:
           cache-dependency-path: frontend/yarn.lock
 
       - name: Build wasm_exec.js
-        run: make wasm_exec
+        run: make wasm_exec && mkdir emptyDir
 
-      - name: Publish to github pages  # Will also upload the artifact
+      - name: Clear previous deployment to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: emptyDir
+          commit_message: "Clear previous deployment to GitHub Pages"
+
+      - name: Publish to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
