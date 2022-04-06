@@ -34,23 +34,10 @@ Use this to provide editable demos for your projects!
 1. Run `go mod vendor` on your [Go Module](https://go.dev/blog/using-go-modules) root.
 2. Zip the project and upload it anywhere.
     1. Check that there are no [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) errors.
+    2. You may use [CI](https://en.wikipedia.org/wiki/Continuous_integration) to perform these steps automatically, [like this workflow for ebiten](https://github.com/Yeicor/ebiten/blob/main/.github/workflows/playground.yml).
 3. Publish the URL that automatically loads and builds your project.
     1. Take a look at [setup.ts](frontend/src/go/setup.ts) for more information on startup automation.
-    2. For example, to download a zip file at the given location and extract it to /src, and then build and run the
-       example at /src/example/demo
-       use [this](https://yeicor.github.io/static-go-playground/?fs_dl_/src=http://example.com/sources-with-vendor.zip&build=/src/example/demo)
-       URL.
-
-You may use [CI](https://en.wikipedia.org/wiki/Continuous_integration) to perform these steps automatically with a
-script similar to:
-
-```shell
-cd <project-root>
-go mod vendor
-zip -r <project-name>.zip .
-<upload> <project-name>.zip
-<update-published-url>
-```
+    2. For example, to automatically download ebiten's sources, build and run an example use [this URL](https://yeicor.github.io/static-go-playground/?fs_dl_/src=https://yeicor.github.io/ebiten/sources-latest.zip&build=/src/examples/chipmunk).
 
 ## How does it work?
 
