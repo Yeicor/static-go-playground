@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [ '1.13', '1.14', '1.15', '1.16', '1.17', '1.18', '1.20' ]
+        go: [ '1.13', '1.14', '1.15', '1.16', '1.17', '1.18', '1.20rc2' ]
         # Go 1.20 had this when building cmd/go for js/wasm: https://github.com/golang/go/issues/54219
     name: Go ${{ matrix.go }}
     steps:
@@ -26,7 +26,7 @@ jobs:
           cache: 'yarn'
           cache-dependency-path: frontend/yarn.lock
       - name: Install binaryen (wasm-opt tool)
-        if: ${{ matrix.go == '1.20' }} # Only optimize the builds on latest Go (takes a while)
+        if: ${{ matrix.go == '1.20rc2' }} # Only optimize the builds on latest Go (takes a while)
         run: |
           set -e
           curl -L https://github.com/WebAssembly/binaryen/releases/download/version_105/binaryen-version_105-x86_64-linux.tar.gz | tar xzf -
@@ -36,7 +36,7 @@ jobs:
         run: make
 
       - name: Write GitHub Pages readme
-        if: ${{ matrix.go == '1.20' && github.ref == 'refs/heads/main' }} # Only prepare GitHub pages for latest Go version and main branch
+        if: ${{ matrix.go == '1.20rc2' && github.ref == 'refs/heads/main' }} # Only prepare GitHub pages for latest Go version and main branch
         run: |
           cat >dist/README.md <<EOF
           # Production build (${{github.ref_name}})
@@ -56,7 +56,7 @@ jobs:
           EOF
 
       - uses: peaceiris/actions-gh-pages@v3
-        if: ${{ matrix.go == '1.20' && github.ref == 'refs/heads/main' }} # Only prepare GitHub pages for latest Go version and main branch
+        if: ${{ matrix.go == '1.20rc2' && github.ref == 'refs/heads/main' }} # Only prepare GitHub pages for latest Go version and main branch
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: dist
