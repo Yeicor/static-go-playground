@@ -38,7 +38,7 @@
   },
   "devDependencies": {
     "@parcel/transformer-inline-string": "^2.4.1",
-    "@types/node": "^14.14.10",
+    "@types/node": "^18.11.18",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
     "buffer": "^6.0.3",
