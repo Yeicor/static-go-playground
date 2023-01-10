@@ -1,7 +1,7 @@
 # Static Go Playground
 
 [![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://mit-license.org/)
-[![Build](https://github.com/Yeicor/static-go-playground/actions/workflows/deploy.yaml/badge.svg)](https://github.com/Yeicor/static-go-playground/actions/workflows/deploy.yaml)
+[![Build](https://github.com/Yeicor/static-go-playground/actions/workflows/build-and-deploy.yaml/badge.svg)](https://github.com/Yeicor/static-go-playground/actions/workflows/deploy.yaml)
 
 ## Features
 
