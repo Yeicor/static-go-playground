@@ -46,7 +46,7 @@ jobs:
       matrix:
         go: [ '1.13', '1.14', '1.15', '1.16', '1.17', '1.18' ]
         # Go 1.19 had this issue when building cmd/go for js/wasm: https://github.com/golang/go/issues/54219 (fixed in Go 1.20)
-    name: "Build Go ${{ matrix.go }} and deploy"
+    name: "Build Go ${{ matrix.go }}"
     steps:
       - uses: actions/checkout@v3
 
