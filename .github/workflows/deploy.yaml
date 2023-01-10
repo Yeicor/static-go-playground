@@ -35,7 +35,7 @@ jobs:
         run: make
 
       - name: Write GitHub Pages readme
-        if: ${{ matrix.go == '1.19' }} && github.ref == 'refs/heads/main' # Only prepare GitHub pages for latest Go version and main branch
+        if: ${{ matrix.go == '1.19' && github.ref == 'refs/heads/main' }} # Only prepare GitHub pages for latest Go version and main branch
         run: |
           cat >dist/README.md <<EOF
           # Production build (${{github.ref_name}})
@@ -55,7 +55,7 @@ jobs:
           EOF
 
       - uses: peaceiris/actions-gh-pages@v3
-        if: ${{ matrix.go == '1.19' }} && github.ref == 'refs/heads/main' # Only prepare GitHub pages for latest Go version and main branch
+        if: ${{ matrix.go == '1.19' && github.ref == 'refs/heads/main' }} # Only prepare GitHub pages for latest Go version and main branch
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: dist
