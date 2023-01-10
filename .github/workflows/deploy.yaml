@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [ '1.13', '1.14', '1.15', '1.16', '1.17', '1.18' ]
+        go: [ '1.13', '1.14', '1.15', '1.16', '1.17', '1.18', '1.19' ]
     name: Go ${{ matrix.go }}
     steps:
       - uses: actions/checkout@v3
@@ -21,11 +21,11 @@ jobs:
           go-version: ${{ matrix.go }}
       - uses: actions/setup-node@v2
         with:
-          node-version: '16'
+          node-version: '18'
           cache: 'yarn'
           cache-dependency-path: frontend/yarn.lock
       - name: Install binaryen (wasm-opt tool)
-        if: ${{ matrix.go == '1.18' }} # Only optimize the builds on latest Go (takes a while)
+        if: ${{ matrix.go == '1.19' }} # Only optimize the builds on latest Go (takes a while)
         run: |
           set -e
           curl -L https://github.com/WebAssembly/binaryen/releases/download/version_105/binaryen-version_105-x86_64-linux.tar.gz | tar xzf -
@@ -35,7 +35,7 @@ jobs:
         run: make
 
       - name: Write GitHub Pages readme
-        if: ${{ matrix.go == '1.18' }} # Only prepare GitHub pages for latest Go version
+        if: ${{ matrix.go == '1.19' }} && github.ref == 'refs/heads/main' # Only prepare GitHub pages for latest Go version and main branch
         run: |
           cat >dist/README.md <<EOF
           # Production build (${{github.ref_name}})
@@ -55,7 +55,7 @@ jobs:
           EOF
 
       - uses: peaceiris/actions-gh-pages@v3
-        if: ${{ matrix.go == '1.18' }} # Only prepare GitHub pages for latest Go version
+        if: ${{ matrix.go == '1.19' }} && github.ref == 'refs/heads/main' # Only prepare GitHub pages for latest Go version and main branch
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: dist
