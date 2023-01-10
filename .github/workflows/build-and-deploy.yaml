@@ -1,18 +1,52 @@
-name: Build Go Compiler and frontend
-on:
-  workflow_run: # Wait for wasm_exec.js to be built to avoid races when writing to github-pages
-    workflows: [ "Build wasm_exec.js" ]
-    types:
-      - completed
+on: push
 jobs:
-  build:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+  build-wasm-exec:
     runs-on: ubuntu-latest
+    name: Build wasm_exec.js
+    steps:
+      - uses: actions/checkout@v3
+
+      # Setup dependencies
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '1.18'
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'yarn'
+          cache-dependency-path: frontend/yarn.lock
+
+      - name: Build wasm_exec.js
+        run: |
+          make wasm_exec
+          mkdir -p emptyDeployment
+          touch emptyDeployment/index.html
+
+      - name: Clear previous deployment to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main' # Only when working on main branch
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: emptyDeployment
+          commit_message: "Clear previous deployment to GitHub Pages"
+
+      - name: Publish to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main' # Only when working on main branch
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: dist-wasm_exec
+          destination_dir: wasm_exec
+          commit_message: "wasm_exec: ${{ github.event.head_commit.message }}"
+
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    needs: [ build-wasm-exec ]
     strategy:
       matrix:
         go: [ '1.13', '1.14', '1.15', '1.16', '1.17', '1.18' ]
         # Go 1.19 had this issue when building cmd/go for js/wasm: https://github.com/golang/go/issues/54219 (fixed in Go 1.20)
-    name: Go ${{ matrix.go }}
+    name: "Build Go ${{ matrix.go }} and deploy"
     steps:
       - uses: actions/checkout@v3
 
@@ -30,7 +64,7 @@ jobs:
         if: ${{ matrix.go == '1.18' }} # Only optimize the builds on latest Go (takes a while)
         run: |
           set -e
-          curl -L https://github.com/WebAssembly/binaryen/releases/download/version_105/binaryen-version_105-x86_64-linux.tar.gz | tar xzf -
+          curl -L https://github.com/WebAssembly/binaryen/releases/download/version_111/binaryen-version_111-x86_64-linux.tar.gz | tar xzf -
           echo `pwd`/binaryen-*/bin | tee /dev/stderr >> $GITHUB_PATH
 
       - name: Build compiler and frontend
