@@ -10,5 +10,5 @@ wasm_exec.js standalone demo is available at https://Yeicor/static-go-playground
 
 ```
 Date: 2023-01-23
-Git revision: 743811c8e7353db1710f60616ad081ec0a3d3ceb
+Git revision: 7b602c50ec5142e73fa6b1130c3704d70397fdf3
 ```
