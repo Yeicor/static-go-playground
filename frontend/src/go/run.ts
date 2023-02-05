@@ -25,7 +25,7 @@ export const goClassWithVFS = async (fs: any, globalHack: any): Promise<any> => 
     globalHack.process = getProcessForFS(fs)
     // globalHack.Buffer = fs.Buffer
     let wasmExecJsFunc = await parsedWasmExecJs
-    // Need 2 different variables as Go 1.18+ started using globalThis instead of global
+    // Need 2 different variables as Go 1.18 started using globalThis instead of global
     wasmExecJsFunc(globalHack, globalHack)
     return globalHack.Go
 }

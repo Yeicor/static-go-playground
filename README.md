@@ -75,7 +75,7 @@ You can download production builds from the [releases](https://github.com/Yeicor
 
 Dependencies:
 
-- Go Compiler (Go 1.13 or later)
+- Go Compiler (Go 1.13-1.18)
 - `node` and `npm`/`yarn`
 - Very common UNIX tools.
 
